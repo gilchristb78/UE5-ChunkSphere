@@ -14,19 +14,6 @@ ATriangleSphere::ATriangleSphere()
 	Mesh->SetCastShadow(false);
 	RootComponent = Mesh;
 
-	Corners = {
-		FVector::DownVector,
-		FVector::ForwardVector,
-		FVector::LeftVector
-	};
-
-	for (FVector& Corner : Corners)
-	{
-		Corner *= 800;
-	}
-
-	Mesh->SetMaterial(0, Material);
-	Mesh->CreateMeshSection(0, Corners, { 2, 1, 0 }, TArray<FVector>(), TArray<FVector2D>(), TArray<FColor>(), TArray<FProcMeshTangent>(), true);
 }
 
 // Called when the game starts or when spawned
@@ -55,9 +42,9 @@ void ATriangleSphere::RefreshMoon()
 
 	for (FVector& vert : Vertices)
 	{
-		vert = vert.GetSafeNormal() * 800; //set the radius
+		vert = vert.GetSafeNormal() * PlanetRadius; //set the radius
 	}
-
+	Mesh->SetMaterial(0, Material);
 	Mesh->CreateMeshSection(0, Vertices, Triangles, TArray<FVector>(), TArray<FVector2D>(), TArray<FColor>(), TArray<FProcMeshTangent>(), true);
 }
 
@@ -172,6 +159,11 @@ int ATriangleSphere::GetTriangleNum(int x)
 	return (x * (x + 1)) / 2;
 }
 
+void ATriangleSphere::SetMaterial(UMaterialInterface* Mat)
+{
+	Mesh->SetMaterial(0, Mat);
+}
+
 #if WITH_EDITOR
 void ATriangleSphere::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
@@ -180,6 +172,10 @@ void ATriangleSphere::PostEditChangeProperty(FPropertyChangedEvent& PropertyChan
 	if (PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(ATriangleSphere, SubDivisions))
 	{
 		RefreshMoon(); // Call CreatePlanet() whenever SubDivisions changes
+	}
+	if (PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(ATriangleSphere, Material))
+	{
+		SetMaterial(Material);
 	}
 }
 #endif

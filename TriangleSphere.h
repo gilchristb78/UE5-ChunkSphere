@@ -23,6 +23,12 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Moon")
 	int SubDivisions = 2;
 
+	TArray<FVector> Corners;
+
+	float PlanetRadius;
+
+	void SetMaterial(UMaterialInterface* Mat);
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -38,8 +44,7 @@ public:
 private:
 
 	TObjectPtr<UProceduralMeshComponent> Mesh;
-	TArray<FVector> Corners;
-
+	
 	TArray<FVector> Vertices;
 	TArray<int> Triangles;
 
@@ -50,4 +55,5 @@ private:
 	void RefreshTriangles(int Resolution);
 	TArray<int> GetVerticeRow(int RowNum, int Resolution);
 	int GetTriangleNum(int x);
+	
 };
