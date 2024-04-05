@@ -47,6 +47,8 @@ void ASphereChunk::BeginPlay()
 			DrawDebugSphere(GetWorld(), DebugLoc, 30, 15, FColor::Red, true);
 		}
 	}
+
+	ChunkIn = Chunks[0];
 	
 }
 
@@ -66,67 +68,16 @@ void ASphereChunk::Tick(float DeltaTime)
 			FVector EndLocation = DefaultPawn->GetActorLocation();
 			FVector Normal = (EndLocation - StartLocation).GetSafeNormal();
 
-			int Incrementer = 1 << PlanetSubDivisions * 1 << PlanetSubDivisions;
 
-			//Figure out which Resoultion^2 set of chunks its in (right now just do top or bottom
-			//need math later to figure out rest
-
-			if (Normal.Z > 0) //up
+			if (!isPointInChunk(ChunkIn, Normal))
 			{
-				if (Normal.Y > 0) //right
-				{
-					if (Normal.X > 0) //forward
-					{
-						Chunks[0]->SetMaterial(Material2);
-					}
-					else //back
-					{
-						Chunks[Incrementer]->SetMaterial(Material2);
-					}
-				}
-				else //left
-				{
-					if (Normal.X > 0) //forward
-					{
-						Chunks[Incrementer * 3]->SetMaterial(Material2);
-					}
-					else //back
-					{
-						Chunks[Incrementer * 2]->SetMaterial(Material2);
-					}
-				}
+				ChunkIn->SetMaterial(Material);
+				ChunkIn = GetChunkAt(Normal);
+				ChunkIn->SetMaterial(Material2);
 			}
-			else // down
-			{
-				if (Normal.Y > 0) //right
-				{
-					if (Normal.X > 0) //forward
-					{
-						Chunks[Chunks.Num() - Incrementer * 4]->SetMaterial(Material2);
-					}
-					else //back
-					{
-						Chunks[Chunks.Num() - Incrementer * 3]->SetMaterial(Material2);
-					}
-				}
-				else //left
-				{
-					if (Normal.X > 0) //forward
-					{
-						Chunks[Chunks.Num() - Incrementer]->SetMaterial(Material2);
-					}
-					else //back
-					{
-						Chunks[Chunks.Num() - Incrementer * 2]->SetMaterial(Material2);
-					}
-				}
-			}
-
-			//UE_LOG(LogTemp, Warning, TEXT("Normal: %f %f %f"), Normal.X, Normal.Y, Normal.Z);
+			
 
 			FVector DebugLoc = StartLocation + Normal * PlanetRadius;
-			DebugLoc.Z = PlanetRadius + 10 + StartLocation.Z;
-
 			DrawDebugSphere(GetWorld(), DebugLoc, 30, 30, FColor::Green);
 
 		}
@@ -275,33 +226,52 @@ int ASphereChunk::GetTriangleNum(int x)
 	return (x * (x + 1)) / 2;
 }
 
-bool ASphereChunk::isPointInTriangle(FVector Corner0, FVector Corner1, FVector Corner2, FVector Point)
+bool ASphereChunk::isPointInChunk(ATriangleSphere* Chunk, FVector Point)
 {
+	return isPointInTriangle3D(Chunk->Corners[0].GetSafeNormal(), Chunk->Corners[1].GetSafeNormal(), Chunk->Corners[2].GetSafeNormal(), Point);
+}
 
-	float x1 = Corner0.X;
-	float x2 = Corner1.X;
-	float x3 = Corner2.X;
+bool ASphereChunk::isPointInTriangle3D(FVector Corner1, FVector Corner2, FVector Corner3, FVector Point)
+{
+	FVector v0 = Corner3 - Corner1;
+	FVector v1 = Corner2 - Corner1;
+	FVector v2 = Point - Corner1;
 
-	float y1 = Corner0.Y;
-	float y2 = Corner1.Y;
-	float y3 = Corner2.Y;
+	// Compute dot products
+	float dot00 = FVector::DotProduct(v0, v0);
+	float dot01 = FVector::DotProduct(v0, v1);
+	float dot02 = FVector::DotProduct(v0, v2);
+	float dot11 = FVector::DotProduct(v1, v1);
+	float dot12 = FVector::DotProduct(v1, v2);
 
-	float xp = Point.X;
-	float yp = Point.Y;
-
-
-
-	float areaABC = 0.5f * ((x2 - x1) * (y3 - y1) - (x3 - x1) * (y2 - y1));
-	float areaBCP = 0.5f * ((x2 - xp) * (y3 - yp) - (x3 - xp) * (y2 - yp));
-	float areaCAP = 0.5f * ((x3 - xp) * (y1 - yp) - (x1 - xp) * (y3 - yp));
-
-	// Calculate barycentric coordinates
-	float alpha = areaBCP / areaABC;
-	float beta = areaCAP / areaABC;
-	float gamma = 1.0f - alpha - beta;
+	// Compute barycentric coordinates
+	float invDenom = 1.0f / (dot00 * dot11 - dot01 * dot01);
+	float u = (dot11 * dot02 - dot01 * dot12) * invDenom;
+	float v = (dot00 * dot12 - dot01 * dot02) * invDenom;
 
 	// Check if point is inside triangle
-	return alpha >= 0.0f && beta >= 0.0f && gamma >= 0.0f && alpha + beta + gamma <= 1.0f;
+	return (u >= 0) && (v >= 0) && (u + v < 1);
+}
+
+ATriangleSphere* ASphereChunk::GetChunkAt(FVector NormalizedPoint)
+{
+
+	int BaseTriangle = 4 * (NormalizedPoint.Z < 0) + 2 * (NormalizedPoint.Y < 0) + (NormalizedPoint.X < 0);
+	int ChunksPerDivision = 1 << PlanetSubDivisions * 1 << PlanetSubDivisions;
+
+	int StartIndex =  BaseTriangle * ChunksPerDivision;
+	int EndIndex = StartIndex + ChunksPerDivision;
+	UE_LOG(LogTemp, Warning, TEXT("From: %d , To: %d"), StartIndex, EndIndex);
+
+	for (int i = StartIndex; i < EndIndex; i++)
+	{
+		if (isPointInChunk(Chunks[i], NormalizedPoint))
+		{
+			return Chunks[i];
+		}
+	}
+
+	return ChunkIn;
 
 }
 

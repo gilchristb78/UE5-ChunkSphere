@@ -45,12 +45,13 @@ private:
 	TArray<TArray<FVector>> BaseTriangles = {
 		{FVector::UpVector, FVector::ForwardVector, FVector::RightVector},
 		{FVector::UpVector, FVector::RightVector, FVector::BackwardVector},
-		{FVector::UpVector, FVector::BackwardVector, FVector::LeftVector},
 		{FVector::UpVector, FVector::LeftVector, FVector::ForwardVector},
+		{FVector::UpVector, FVector::BackwardVector, FVector::LeftVector},
 		{FVector::DownVector, FVector::ForwardVector, FVector::RightVector},
 		{FVector::DownVector, FVector::RightVector, FVector::BackwardVector},
+		{FVector::DownVector, FVector::LeftVector, FVector::ForwardVector},
 		{FVector::DownVector, FVector::BackwardVector, FVector::LeftVector},
-		{FVector::DownVector, FVector::LeftVector, FVector::ForwardVector}
+		
 	};
 
 	TArray<TArray<FVector>> ChunkTriangles;
@@ -63,6 +64,10 @@ private:
 
 	TArray<ATriangleSphere*> Chunks;
 
-	bool isPointInTriangle(FVector Corner0, FVector Corner1, FVector Corner2, FVector Point);
+	bool isPointInChunk(ATriangleSphere* Chunk, FVector Point);
+	bool isPointInTriangle3D(FVector Corner1, FVector Corner2, FVector Corner3, FVector Point);
 
+	ATriangleSphere* ChunkIn;
+
+	ATriangleSphere* GetChunkAt(FVector NormalizedPoint);
 };
