@@ -32,6 +32,14 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Moon")
 	TObjectPtr<UMaterialInterface> Material2;
 
+	UPROPERTY(EditAnywhere, Category = "Moon")
+	TObjectPtr<UMaterialInterface> Material3;
+
+	UPROPERTY(EditAnywhere, Category = "Moon")
+	TObjectPtr<UMaterialInterface> Material4;
+
+	UPROPERTY(EditAnywhere, Category = "Moon")
+	TObjectPtr<UMaterialInterface> Material5;
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -63,14 +71,19 @@ private:
 	int GetTriangleNum(int x);
 
 	TArray<ATriangleSphere*> Chunks;
-	TArray<TArray<ATriangleSphere*>> ChunkRows = { {},{},{},{},{},{},{},{} };
+	TArray<TArray<ATriangleSphere*>> ChunkRows; //could remove eventually
 
 	bool isPointInChunk(ATriangleSphere* Chunk, FVector Point);
 	bool isPointInTriangle3D(FVector Corner1, FVector Corner2, FVector Corner3, FVector Point);
 
 	ATriangleSphere* ChunkIn;
+	TArray<ATriangleSphere*> Neighbors;
+	TArray<ATriangleSphere*> HalfPlanetChunks;
 
 	ATriangleSphere* GetChunkAt(FVector NormalizedPoint);
-	int GetRow(int index);
+	int GetRow(int index); //could also add a get index (row / col) and remove rows array
 	int GetCol(int index);
+	void SetNeighbors(int row, int col);
+	void SetHalf(int row, int col);
+	bool AreNeighbors(ATriangleSphere* Chunk, ATriangleSphere* Chunk2);
 };
