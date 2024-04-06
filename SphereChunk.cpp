@@ -20,8 +20,9 @@ void ASphereChunk::BeginPlay()
 
 	Subdivide(PlanetSubDivisions);
 
-	for (TArray<FVector> ChunkTriangle : ChunkTriangles)
+	for(int i = 0; i < ChunkTriangles.Num(); i++)
 	{
+		TArray<FVector> ChunkTriangle = ChunkTriangles[i];
 		FTransform transform = FTransform(FRotator::ZeroRotator, GetActorLocation(), FVector::OneVector);
 		ATriangleSphere* Chunk = GetWorld()->SpawnActorDeferred<ATriangleSphere>(ATriangleSphere::StaticClass(), transform, this);
 		Chunk->Corners = ChunkTriangle;
@@ -31,21 +32,6 @@ void ASphereChunk::BeginPlay()
 		Chunk->FinishSpawning(transform);
 
 		Chunks.Add(Chunk);
-
-		if (ChunkTriangle[0].Z > 0)
-		{
-			FVector DebugLoc = ChunkTriangle[0].GetSafeNormal() * PlanetRadius + GetActorLocation();
-			DebugLoc.Z = GetActorLocation().Z + PlanetRadius + 10;
-			DrawDebugSphere(GetWorld(), DebugLoc, 30, 15, FColor::Red, true);
-
-			DebugLoc = ChunkTriangle[1].GetSafeNormal() * PlanetRadius + GetActorLocation();
-			DebugLoc.Z = GetActorLocation().Z + PlanetRadius + 10;
-			DrawDebugSphere(GetWorld(), DebugLoc, 30, 15, FColor::Red, true);
-
-			DebugLoc = ChunkTriangle[2].GetSafeNormal() * PlanetRadius + GetActorLocation();
-			DebugLoc.Z = GetActorLocation().Z + PlanetRadius + 10;
-			DrawDebugSphere(GetWorld(), DebugLoc, 30, 15, FColor::Red, true);
-		}
 	}
 
 	ChunkIn = Chunks[0];
@@ -261,12 +247,13 @@ ATriangleSphere* ASphereChunk::GetChunkAt(FVector NormalizedPoint)
 
 	int StartIndex =  BaseTriangle * ChunksPerDivision;
 	int EndIndex = StartIndex + ChunksPerDivision;
-	UE_LOG(LogTemp, Warning, TEXT("From: %d , To: %d"), StartIndex, EndIndex);
-
+	
 	for (int i = StartIndex; i < EndIndex; i++)
 	{
 		if (isPointInChunk(Chunks[i], NormalizedPoint))
 		{
+			
+			UE_LOG(LogTemp, Warning, TEXT("Row: %d, Col: %d"), GetRow(i), GetCol(i));
 			return Chunks[i];
 		}
 	}
@@ -274,4 +261,41 @@ ATriangleSphere* ASphereChunk::GetChunkAt(FVector NormalizedPoint)
 	return ChunkIn;
 
 }
+
+int ASphereChunk::GetRow(int index)
+{
+	int ChunksPerDivision = 1 << (2 * PlanetSubDivisions); //how many chunks are in each of the 8 divisions
+	int modulus = FMath::Floor(index % ChunksPerDivision); //forget which division we are in, we just want the row
+	int row = FMath::Floor(FMath::Sqrt((float)modulus));
+	if (index >= ChunksPerDivision * 4)
+		row = 7 - row;
+	return row;
+}
+
+int ASphereChunk::GetCol(int index)
+{
+
+	int ChunksPerDivision = 1 << (2 * PlanetSubDivisions); //how many chunks are in each of the 8 divisions
+	int modulus = FMath::Floor(index % ChunksPerDivision); //forget which division we are in, we just want the row
+	int row = FMath::Floor(FMath::Sqrt((float)modulus));
+	if (index >= ChunksPerDivision * 4)
+		row = 7 - row;
+
+	int BaseCol = (index % ChunksPerDivision) - pow(row,2);
+	TArray<int> DivisionMap = { 0,1,3,2,0,1,3,2};
+	int divisionmodifier = DivisionMap[floor(index / ChunksPerDivision)];
+	if (row > 3)
+	{
+		BaseCol = (index % ChunksPerDivision) - pow(7 - row, 2);
+		divisionmodifier *= (2 * (7 - row)) + 1;
+	}
+	else
+	{
+		divisionmodifier *= (2 * row) + 1;
+	}
+
+	return BaseCol + divisionmodifier;
+}
+
+
 

@@ -63,6 +63,7 @@ private:
 	int GetTriangleNum(int x);
 
 	TArray<ATriangleSphere*> Chunks;
+	TArray<TArray<ATriangleSphere*>> ChunkRows = { {},{},{},{},{},{},{},{} };
 
 	bool isPointInChunk(ATriangleSphere* Chunk, FVector Point);
 	bool isPointInTriangle3D(FVector Corner1, FVector Corner2, FVector Corner3, FVector Point);
@@ -70,4 +71,6 @@ private:
 	ATriangleSphere* ChunkIn;
 
 	ATriangleSphere* GetChunkAt(FVector NormalizedPoint);
+	int GetRow(int index);
+	int GetCol(int index);
 };
