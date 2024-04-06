@@ -161,6 +161,7 @@ int ATriangleSphere::GetTriangleNum(int x)
 
 void ATriangleSphere::SetMaterial(UMaterialInterface* Mat)
 {
+	Material = Mat;
 	Mesh->SetMaterial(0, Mat);
 }
 
