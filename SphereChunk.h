@@ -83,7 +83,8 @@ private:
 	ATriangleSphere* GetChunkAt(FVector NormalizedPoint);
 	int GetRow(int index); //could also add a get index (row / col) and remove rows array
 	int GetCol(int index);
-	void SetNeighbors(int row, int col);
 	void SetHalf(int row, int col);
-	bool AreNeighbors(ATriangleSphere* Chunk, ATriangleSphere* Chunk2);
+
+	float PlanetDist(FVector Point1, FVector Point2);
+	FVector getCentroid(ATriangleSphere* Chunk);
 };
