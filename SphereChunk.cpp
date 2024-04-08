@@ -18,32 +18,36 @@ void ASphereChunk::BeginPlay()
 {
 	Super::BeginPlay();
 
-	Subdivide(PlanetSubDivisions);
-	ChunkRows.SetNum((1 << PlanetSubDivisions) * 2);
-	for (int i = 0; i < ChunkRows.Num(); i++)
+	if (Chunks.IsEmpty()) //incase this actor is culled, dont redo math
 	{
-		int rowSize;
-		int MaxRows = (1 << PlanetSubDivisions) * 2;
-		i < MaxRows / 2 ? rowSize = 4 * ((2 * i) + 1) : rowSize = 4 * (2 * (MaxRows - 1 - i) + 1);
-		ChunkRows[i].SetNum(rowSize);
+		Subdivide(PlanetSubDivisions);
+		ChunkRows.SetNum((1 << PlanetSubDivisions) * 2);
+		for (int i = 0; i < ChunkRows.Num(); i++)
+		{
+			int rowSize;
+			int MaxRows = (1 << PlanetSubDivisions) * 2;
+			i < MaxRows / 2 ? rowSize = 4 * ((2 * i) + 1) : rowSize = 4 * (2 * (MaxRows - 1 - i) + 1);
+			ChunkRows[i].SetNum(rowSize);
+		}
+
+		for (int i = 0; i < ChunkTriangles.Num(); i++)
+		{
+			TArray<FVector> ChunkTriangle = ChunkTriangles[i];
+			FTransform transform = FTransform(FRotator::ZeroRotator, GetActorLocation(), FVector::OneVector);
+			ATriangleSphere* Chunk = GetWorld()->SpawnActorDeferred<ATriangleSphere>(ATriangleSphere::StaticClass(), transform, this);
+			Chunk->Corners = ChunkTriangle;
+			Chunk->SubDivisions = ChunkSubDivisions;
+			Chunk->Material = Material;
+			Chunk->PlanetRadius = PlanetRadius;
+			Chunk->FinishSpawning(transform);
+
+			Chunks.Add(Chunk);
+			ChunkRows[GetRow(i)][GetCol(i)] = Chunk;//.Insert(Chunk, GetCol(i));
+		}
+
+		ChunkIn = Chunks[0];
 	}
-
-	for(int i = 0; i < ChunkTriangles.Num(); i++)
-	{
-		TArray<FVector> ChunkTriangle = ChunkTriangles[i];
-		FTransform transform = FTransform(FRotator::ZeroRotator, GetActorLocation(), FVector::OneVector);
-		ATriangleSphere* Chunk = GetWorld()->SpawnActorDeferred<ATriangleSphere>(ATriangleSphere::StaticClass(), transform, this);
-		Chunk->Corners = ChunkTriangle;
-		Chunk->SubDivisions = ChunkSubDivisions;
-		Chunk->Material = Material;
-		Chunk->PlanetRadius = PlanetRadius;
-		Chunk->FinishSpawning(transform);
-
-		Chunks.Add(Chunk);
-		ChunkRows[GetRow(i)][GetCol(i)] = Chunk;//.Insert(Chunk, GetCol(i));
-	}
-
-	ChunkIn = Chunks[0];
+	
 	
 }
 
@@ -68,16 +72,7 @@ void ASphereChunk::Tick(float DeltaTime)
 			{
 				ChunkIn->SetMaterial(Material);
 				ChunkIn = GetChunkAt(Normal);
-				for (ATriangleSphere* Chunk : HalfPlanetChunks)
-				{
-					//Chunk->SetMaterial(Material4);
-				}
-				
-				for (ATriangleSphere* Chunk : Neighbors)
-				{
-					Chunk->SetMaterial(Material3);
-				}
-				ChunkIn->SetMaterial(Material2);
+				ChunkIn->SetMaterial(Material3);
 			}
 			
 
@@ -260,21 +255,6 @@ bool ASphereChunk::isPointInTriangle3D(FVector Corner1, FVector Corner2, FVector
 ATriangleSphere* ASphereChunk::GetChunkAt(FVector NormalizedPoint)
 {
 
-
-	//check neighbors
-	//if in return that else do below
-
-	//for (ATriangleSphere* Chunk : Neighbors)
-	//{
-	//	if (isPointInChunk(Chunk, NormalizedPoint))
-	//	{
-	// HOW DO I GET I????
-	//		/*SetHalf(GetRow(i), GetCol(i));
-	//		SetNeighbors(GetRow(i), GetCol(i));*/
-	//		return Chunk;
-	//	}
-	//}
-
 	int BaseTriangle = 4 * (NormalizedPoint.Z < 0) + 2 * (NormalizedPoint.Y < 0) + (NormalizedPoint.X < 0);
 	int ChunksPerDivision = 1 << PlanetSubDivisions * 1 << PlanetSubDivisions;
 
@@ -286,7 +266,6 @@ ATriangleSphere* ASphereChunk::GetChunkAt(FVector NormalizedPoint)
 		if (isPointInChunk(Chunks[i], NormalizedPoint))
 		{
 			SetHalf(GetRow(i), GetCol(i));
-			SetNeighbors(GetRow(i), GetCol(i));
 			return Chunks[i];
 		}
 	}
@@ -332,97 +311,6 @@ int ASphereChunk::GetCol(int index)
 	return BaseCol + divisionmodifier;
 }
 
-void ASphereChunk::SetNeighbors(int row, int col)
-{
-	for (ATriangleSphere* Chunk : Neighbors)
-	{
-		Chunk->SetMaterial(Material4);
-	}
-	Neighbors = TArray<ATriangleSphere*>();
-
-	float percentageThroughRow = col / ((float)ChunkRows[row].Num() - 1);
-
-	if (row > 0)
-	{
-		int aboveIndex = (ChunkRows[row - 1].Num() - 1) * percentageThroughRow;
-		for (int i = aboveIndex - 4; i <= aboveIndex + 4; i++)
-		{
-			int index;
-			
-			if (i < 0)
-			{
-				index = (ChunkRows[row - 1].Num()) + i;
-			}
-			else
-			{
-				index = i % (ChunkRows[row - 1].Num());
-			}
-				
-
-			if (AreNeighbors(ChunkRows[row][col], ChunkRows[row - 1][index]))
-				Neighbors.Add(ChunkRows[row - 1][index]);
-		}
-		
-	}
-
-	for (int i = col - 3; i <= col + 3; i++)
-	{
-		if (i != col)
-		{
-			int index;
-
-			if (i < 0)
-			{
-				index = (ChunkRows[row].Num()) + i;
-			}
-			else
-			{
-				index = i % (ChunkRows[row].Num());
-			}
-
-
-			if (AreNeighbors(ChunkRows[row][col], ChunkRows[row][index]))
-				Neighbors.Add(ChunkRows[row][index]);
-		}
-	}
-	int MaxRows = (1 << PlanetSubDivisions) * 2;
-	if (row < MaxRows - 1) 
-	{
-		int aboveIndex = (ChunkRows[row + 1].Num() - 1) * percentageThroughRow;
-		for (int i = aboveIndex - 4; i <= aboveIndex + 4; i++)
-		{
-			int index;
-
-			if (i < 0)
-			{
-				index = (ChunkRows[row + 1].Num()) + i;
-			}
-			else
-			{
-				index = i % (ChunkRows[row + 1].Num());
-			}
-
-			if(AreNeighbors(ChunkRows[row][col], ChunkRows[row + 1][index]))
-				Neighbors.Add(ChunkRows[row + 1][index]);
-		}
-
-	}
-
-}
-
-bool ASphereChunk::AreNeighbors(ATriangleSphere* Chunk, ATriangleSphere* Chunk2)
-{
-	for (FVector const Corner : Chunk->Corners)
-	{
-		for (FVector const Corner2 : Chunk2->Corners)
-		{
-			if (Corner == Corner2)
-				return true;
-		}
-	}
-	return false;
-}
-
 void ASphereChunk::SetHalf(int row, int col)
 {
 	for (ATriangleSphere* Chunk : HalfPlanetChunks)
@@ -431,74 +319,54 @@ void ASphereChunk::SetHalf(int row, int col)
 	}
 	HalfPlanetChunks = TArray<ATriangleSphere*>();
 
+	ATriangleSphere* MiddleChunk = ChunkRows[row][col];
 
-	float percentageThroughRow = col / ((float)ChunkRows[row].Num() - 1);
-
-
-	for (int i = row - ChunkRows.Num() / 2; i < row + ChunkRows.Num() / 2; i++) //2
+	for(TArray<ATriangleSphere*> Row : ChunkRows)
 	{
-
-		bool test = i >= row - ((ChunkRows.Num() / 4) + 1)  &&
-			i < row + ((ChunkRows.Num() / 4) + 1);
-
-
-		int MaxCheck = (ChunkRows.Num() - 1) * 2;
-
-		int innerrow = i;
-		float percent = percentageThroughRow;
-		if (i < 0)
+		for (ATriangleSphere* Chunk : Row)
 		{
-			innerrow = abs(i);
-			percent = (percent + 0.5f);
-		}
-		if (i > ChunkRows.Num() - 1)
-		{
-			innerrow = ((ChunkRows.Num() - 1) * 2) - i;
-			percent = (percent + 0.5);
-		}
+			float MaxDist = (PI * PlanetRadius);
+			float dist = PlanetDist(getCentroid(ChunkRows[row][col]), getCentroid(Chunk));
+			if (dist < MaxDist / 2)
+			{
+				Chunk->SetMaterial(Material4);
+				HalfPlanetChunks.Add(Chunk);
+			}
 
-		TArray<ATriangleSphere*> Row = ChunkRows[innerrow];
+			if (dist < MaxDist / 3)
+			{
+				Chunk->SetMaterial(Material3);
+			}
 
-		int start = (Row.Num() - 1) * FMath::Fmod(percent, Row.Num());
-		int quarter = (Row.Num() / 4) + 1; //4
+			if (dist < MaxDist / 5)
+			{
+				Chunk->SetMaterial(Material5);
+			}
 
-		for (int j = start - quarter; j < start + quarter; j++)
-		{
-			int index;
-			
-			bool quickfix = (row < ChunkRows.Num() / 4 && innerrow < ChunkRows.Num() / 4) ||
-							(row > ChunkRows.Num() - (ChunkRows.Num() / 4) && innerrow > ChunkRows.Num() - (ChunkRows.Num() / 4));
-			bool test2 = quickfix || test &&
-				j >= start - ((Row.Num() / 8) + 3) &&
-				j < start + ((Row.Num() / 8) + 3);
-
-			j < 0 ? index = Row.Num() + j: index = j % Row.Num();
-			HalfPlanetChunks.Add(Row[index]);
-
-			test2 ? Row[index]->SetMaterial(Material4) : Row[index]->SetMaterial(Material2);
-			
+			if (dist < MaxDist / 10)
+			{
+				Chunk->SetMaterial(Material2);
+			}
 		}
 
 	}
 
+}
 
-	//change to [j] and go from row - "4" to row + "4" and 
-	// if neg go to 0,1,2,3 with start + 1/2 (percentage through + .5f)
-	// if >= "8" go to 7,6,5,4 with start + 1/2 (percent + 0.5f)
-	//for (TArray<ATriangleSphere*> Row : ChunkRows)
-	//{
-	//	int start = (Row.Num() - 1) * percentageThroughRow;
-	//	int quarter = (Row.Num() / 4);
+FVector ASphereChunk::getCentroid(ATriangleSphere* Chunk)
+{
+	float X1 = (Chunk->Corners[1].X + Chunk->Corners[2].X + Chunk->Corners[0].X) / 3;
+	float Y1 = (Chunk->Corners[1].Y + Chunk->Corners[2].Y + Chunk->Corners[0].Y) / 3;
+	float Z1 = (Chunk->Corners[1].Z + Chunk->Corners[2].Z + Chunk->Corners[0].Z) / 3;
 
-	//	for (int i = start - quarter; i < start + quarter; i++)
-	//	{
-	//		int index;
-	//		i < 0 ? index = Row.Num() + i : index = i % Row.Num();
-	//		HalfPlanetChunks.Add(Row[index]);
-	//		Row[index]->SetMaterial(Material4);
-	//	}
-	//	
-	//}
+	return FVector(X1, Y1, Z1);
+}
+
+float ASphereChunk::PlanetDist(FVector Point1, FVector Point2)
+{
+	FVector v1 = Point1.GetSafeNormal() * PlanetRadius;
+	FVector v2 = Point2.GetSafeNormal() * PlanetRadius;
+	return PlanetRadius * FMath::Acos(((v1.X * v2.X) + (v1.Y * v2.Y) + (v1.Z * v2.Z)) / (PlanetRadius * PlanetRadius));
 }
 
 
