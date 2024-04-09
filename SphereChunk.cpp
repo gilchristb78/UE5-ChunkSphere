@@ -33,8 +33,8 @@ void ASphereChunk::BeginPlay()
 		for (int i = 0; i < ChunkTriangles.Num(); i++)
 		{
 			TArray<FVector> ChunkTriangle = ChunkTriangles[i];
-			FTransform transform = FTransform(FRotator::ZeroRotator, GetActorLocation(), FVector::OneVector);
-			ATriangleSphere* Chunk = GetWorld()->SpawnActorDeferred<ATriangleSphere>(ATriangleSphere::StaticClass(), transform, this);
+			FTransform transform = FTransform(FRotator::ZeroRotator, (ChunkTriangle[0].GetSafeNormal() * PlanetRadius) + PlanetLocation, FVector::OneVector);
+			ATriangleSphere* Chunk = GetWorld()->SpawnActorDeferred<ATriangleSphere>(ATriangleSphere::StaticClass(), transform, GetOwner());
 			Chunk->Corners = ChunkTriangle;
 			Chunk->SubDivisions = ChunkSubDivisions;
 			Chunk->Material = Material;
@@ -45,8 +45,9 @@ void ASphereChunk::BeginPlay()
 			ChunkRows[GetRow(i)][GetCol(i)] = Chunk;//.Insert(Chunk, GetCol(i));
 		}
 
-		ChunkIn = Chunks[0];
 	}
+
+	ChunkIn = Chunks[0];
 	
 	
 }
@@ -63,7 +64,7 @@ void ASphereChunk::Tick(float DeltaTime)
 	{
 		if (DefaultPawn)
 		{
-			FVector StartLocation = GetActorLocation();
+			FVector StartLocation = PlanetLocation;
 			FVector EndLocation = DefaultPawn->GetActorLocation();
 			FVector Normal = (EndLocation - StartLocation).GetSafeNormal();
 
@@ -77,6 +78,10 @@ void ASphereChunk::Tick(float DeltaTime)
 			
 
 			FVector DebugLoc = StartLocation + Normal * PlanetRadius;
+
+			if (GEngine)
+				GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Black, FString::Printf(TEXT("Dist: %f"), FVector::Dist(DebugLoc, EndLocation) / PlanetRadius));
+
 			DrawDebugSphere(GetWorld(), DebugLoc, 30, 30, FColor::Green);
 
 		}
