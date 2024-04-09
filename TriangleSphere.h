@@ -7,6 +7,7 @@
 #include "TriangleSphere.generated.h"
 
 class UProceduralMeshComponent;
+class FastNoiseLite;
 
 UCLASS()
 class MOONS_API ATriangleSphere : public AActor
@@ -29,6 +30,12 @@ public:
 
 	void SetMaterial(UMaterialInterface* Mat);
 
+	float Frequency = 0.01f;
+	int FractalOctaves = 3;
+	int NoiseSeed;
+	float FractalLacunarity = 2.0f;
+	float FractalGain = 0.5f;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -47,7 +54,7 @@ private:
 	
 	TArray<FVector> Vertices;
 	TArray<int> Triangles;
-
+	FastNoiseLite* Noise;
 	
 
 	void RefreshMoon();
@@ -55,5 +62,6 @@ private:
 	void RefreshTriangles(int Resolution);
 	TArray<int> GetVerticeRow(int RowNum, int Resolution);
 	int GetTriangleNum(int x);
+	void SetNoiseVariables();
 	
 };

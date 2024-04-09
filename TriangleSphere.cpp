@@ -3,6 +3,7 @@
 
 #include "TriangleSphere.h"
 #include "ProceduralMeshComponent.h"
+#include "FastNoiseLite.h"
 
 // Sets default values
 ATriangleSphere::ATriangleSphere()
@@ -14,12 +15,15 @@ ATriangleSphere::ATriangleSphere()
 	Mesh->SetCastShadow(false);
 	RootComponent = Mesh;
 
+	Noise = new FastNoiseLite();
 }
 
 // Called when the game starts or when spawned
 void ATriangleSphere::BeginPlay()
 {
 	Super::BeginPlay();
+
+	SetNoiseVariables();
 
 	if(Vertices.IsEmpty())
 		RefreshMoon();
@@ -42,7 +46,10 @@ void ATriangleSphere::RefreshMoon()
 
 	for (FVector& vert : Vertices)
 	{
-		vert = vert.GetSafeNormal() * PlanetRadius; //set the radius
+		FVector PlanetCenter = Corners[0].GetSafeNormal() * PlanetRadius;
+		FVector location = (vert.GetSafeNormal() * PlanetRadius);
+		float noise = Noise->GetNoise(location.X, location.Y, location.Z);
+		vert = location - PlanetCenter + (vert.GetSafeNormal() * noise * 2000);
 	}
 	Mesh->SetMaterial(0, Material);
 	Mesh->CreateMeshSection(0, Vertices, Triangles, TArray<FVector>(), TArray<FVector2D>(), TArray<FColor>(), TArray<FProcMeshTangent>(), true);
@@ -157,6 +164,18 @@ int ATriangleSphere::GetTriangleNum(int x)
 		return 0;
 
 	return (x * (x + 1)) / 2;
+}
+
+void ATriangleSphere::SetNoiseVariables()
+{
+	Noise->SetSeed(NoiseSeed);
+	Noise->SetFrequency(Frequency);
+	Noise->SetNoiseType(FastNoiseLite::NoiseType_Perlin);
+	Noise->SetFractalType(FastNoiseLite::FractalType_FBm);
+	Noise->SetFractalOctaves(FractalOctaves);
+	Noise->SetFractalLacunarity(FractalLacunarity);
+	Noise->SetFractalGain(FractalGain);
+	
 }
 
 void ATriangleSphere::SetMaterial(UMaterialInterface* Mat)

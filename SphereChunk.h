@@ -40,6 +40,10 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Moon")
 	TObjectPtr<UMaterialInterface> Material5;
+
+	UPROPERTY(EditAnywhere, Category = "Moon")
+	FVector PlanetLocation;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
