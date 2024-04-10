@@ -29,12 +29,14 @@ public:
 	float PlanetRadius;
 
 	void SetMaterial(UMaterialInterface* Mat);
+	void SetNoiseValues(float Freq, int Octaves, int Seed, float Lac, float Gain, float Strength);
 
 	float Frequency = 0.01f;
 	int FractalOctaves = 3;
 	int NoiseSeed;
 	float FractalLacunarity = 2.0f;
 	float FractalGain = 0.5f;
+	float NoiseStrength = 2000.0f;
 
 protected:
 	// Called when the game starts or when spawned

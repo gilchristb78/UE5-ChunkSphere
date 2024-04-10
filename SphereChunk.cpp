@@ -88,6 +88,24 @@ void ASphereChunk::Tick(float DeltaTime)
 	}
 }
 
+void ASphereChunk::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+
+	if (PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(ASphereChunk, Frequency) ||
+		PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(ASphereChunk, FractalOctaves) ||
+		PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(ASphereChunk, NoiseSeed) ||
+		PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(ASphereChunk, FractalLacunarity) ||
+		PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(ASphereChunk, FractalGain) ||
+		PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(ASphereChunk, NoiseStrength))
+	{
+		for (ATriangleSphere* Chunk : Chunks)
+		{
+			Chunk->SetNoiseValues(Frequency, FractalOctaves, NoiseSeed, FractalLacunarity, FractalGain, NoiseStrength);
+		}
+	}
+}
+
 void ASphereChunk::Subdivide(int SubDivisions)
 {
 	if (SubDivisions == 0)

@@ -48,8 +48,11 @@ void ATriangleSphere::RefreshMoon()
 	{
 		FVector PlanetCenter = Corners[0].GetSafeNormal() * PlanetRadius;
 		FVector location = (vert.GetSafeNormal() * PlanetRadius);
-		float noise = Noise->GetNoise(location.X, location.Y, location.Z);
-		vert = location - PlanetCenter + (vert.GetSafeNormal() * noise * 2000);
+		float noiseX = Noise->GetNoise(location.X, location.Y, location.Z);
+		float noiseY = Noise->GetNoise(location.X + 520, location.Y + 130, location.Z + 70);
+		float noiseZ = Noise->GetNoise(location.X + 150, location.Y + 80, location.Z + 40);
+		float noise = Noise->GetNoise(location.X + noiseZ * PlanetRadius, location.Y + noiseY* PlanetRadius, location.Z + noiseZ * PlanetRadius);
+		vert = location - PlanetCenter + (vert.GetSafeNormal() * noise * NoiseStrength);
 	}
 	Mesh->SetMaterial(0, Material);
 	Mesh->CreateMeshSection(0, Vertices, Triangles, TArray<FVector>(), TArray<FVector2D>(), TArray<FColor>(), TArray<FProcMeshTangent>(), true);
@@ -186,6 +189,18 @@ void ATriangleSphere::SetMaterial(UMaterialInterface* Mat)
 		Mesh->SetMaterial(0, Mat);
 	}
 	
+}
+
+void ATriangleSphere::SetNoiseValues(float Freq, int Octaves, int Seed, float Lac, float Gain, float Strength)
+{
+	Frequency = Freq;
+	FractalOctaves = Octaves;
+	NoiseSeed = Seed;
+	FractalLacunarity = Lac;
+	FractalGain = Gain;
+	NoiseStrength = Strength;
+	SetNoiseVariables();
+	RefreshMoon();
 }
 
 #if WITH_EDITOR
