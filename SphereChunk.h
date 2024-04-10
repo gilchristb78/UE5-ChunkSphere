@@ -44,6 +44,24 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Moon")
 	FVector PlanetLocation;
 
+	UPROPERTY(EditAnywhere, Category = "Noise")
+	float Frequency = 0.01f;
+
+	UPROPERTY(EditAnywhere, Category = "Noise")
+	int FractalOctaves = 3;
+
+	UPROPERTY(EditAnywhere, Category = "Noise")
+	int NoiseSeed = 0;
+
+	UPROPERTY(EditAnywhere, Category = "Noise")
+	float FractalLacunarity = 2.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Noise")
+	float FractalGain = 0.5f;
+
+	UPROPERTY(EditAnywhere, Category = "Noise")
+	float NoiseStrength = 2000.0f;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -51,6 +69,10 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+
+#if WITH_EDITOR
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
 
 private:
 
