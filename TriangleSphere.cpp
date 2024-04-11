@@ -4,6 +4,7 @@
 #include "TriangleSphere.h"
 #include "ProceduralMeshComponent.h"
 #include "FastNoiseLite.h"
+#include "Crater.h"
 
 // Sets default values
 ATriangleSphere::ATriangleSphere()
@@ -52,7 +53,17 @@ void ATriangleSphere::RefreshMoon()
 		float noiseY = Noise->GetNoise(location.X + 520, location.Y + 130, location.Z + 70);
 		float noiseZ = Noise->GetNoise(location.X + 150, location.Y + 80, location.Z + 40);
 		float noise = Noise->GetNoise(location.X + noiseZ * PlanetRadius, location.Y + noiseY* PlanetRadius, location.Z + noiseZ * PlanetRadius);
-		vert = location - PlanetCenter + (vert.GetSafeNormal() * noise * NoiseStrength);
+		
+
+		float craterheight = 0;
+		for(UCrater* Crater : Craters)
+		{
+			float offset = Crater->GetHeight(location);
+			craterheight += offset;
+			
+		}
+
+		vert = location - PlanetCenter + (vert.GetSafeNormal() * noise * NoiseStrength) + (vert.GetSafeNormal() * craterheight);
 	}
 	Mesh->SetMaterial(0, Material);
 	Mesh->CreateMeshSection(0, Vertices, Triangles, TArray<FVector>(), TArray<FVector2D>(), TArray<FColor>(), TArray<FProcMeshTangent>(), true);

@@ -7,6 +7,7 @@
 #include "SphereChunk.generated.h"
 
 class ATriangleSphere;
+class UCrater;
 
 UCLASS()
 class MOONS_API ASphereChunk : public AActor
@@ -62,6 +63,24 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Noise")
 	float NoiseStrength = 2000.0f;
 
+	UPROPERTY(EditAnywhere, Category = "Crater")
+	int CraterNum = 1;
+
+	UPROPERTY(EditAnywhere, Category = "Crater")
+	float CraterRadius = 250.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Crater")
+	float CraterFloor = -0.2f;
+
+	UPROPERTY(EditAnywhere, Category = "Crater")
+	float RimSteepness = 0.23f;
+
+	UPROPERTY(EditAnywhere, Category = "Crater")
+	float RimHeight = 0.81f;
+
+	UPROPERTY(EditAnywhere, Category = "Crater")
+	float Smoothfactor = 0.2f;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -75,6 +94,9 @@ public:
 #endif
 
 private:
+
+	UPROPERTY()
+	TArray<UCrater*> Craters;
 
 	TArray<TArray<FVector>> BaseTriangles = {
 		{FVector::UpVector, FVector::ForwardVector, FVector::RightVector},

@@ -8,6 +8,7 @@
 
 class UProceduralMeshComponent;
 class FastNoiseLite;
+class UCrater;
 
 UCLASS()
 class MOONS_API ATriangleSphere : public AActor
@@ -38,6 +39,9 @@ public:
 	float FractalGain = 0.5f;
 	float NoiseStrength = 2000.0f;
 
+	UPROPERTY()
+	TArray<UCrater*> Craters;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -45,6 +49,7 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+	void RefreshMoon();
 	
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
@@ -58,8 +63,6 @@ private:
 	TArray<int> Triangles;
 	FastNoiseLite* Noise;
 	
-
-	void RefreshMoon();
 	void RefreshVertices(int Resolution);
 	void RefreshTriangles(int Resolution);
 	TArray<int> GetVerticeRow(int RowNum, int Resolution);
