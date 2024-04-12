@@ -33,14 +33,14 @@ void ASphereChunk::BeginPlay()
 			ChunkRows[i].SetNum(rowSize);
 		}
 
+		Craters = TArray<UCrater*>();
 		for (int i = 0; i < CraterNum; i++)
 		{
 			UCrater* newCrater = NewObject<UCrater>(this);
 			newCrater->CraterCenter = FMath::VRand().GetSafeNormal() * PlanetRadius;
-			DrawDebugSphere(GetWorld(), newCrater->CraterCenter + PlanetLocation, CraterRadius, 36, FColor::Blue, true);
 			newCrater->PlanetRadius = PlanetRadius;
-			newCrater->CraterRadius = CraterRadius;
-			newCrater->CraterFloor = CraterFloor;
+			newCrater->CraterRadius = GetCraterRadius();
+			newCrater->CraterFloor = GetCraterFloor();
 			newCrater->RimSteepness = RimSteepness;
 			newCrater->RimHeight = RimHeight;
 			newCrater->SmoothFactor = Smoothfactor;
@@ -62,6 +62,7 @@ void ASphereChunk::BeginPlay()
 			Chunk->FractalLacunarity = FractalLacunarity;
 			Chunk->FractalGain = FractalGain;
 			Chunk->NoiseStrength = NoiseStrength;
+			Chunk->maxCraterRadius = (PlanetRadius / 4);
 			Chunk->TryAddCraters(Craters);
 			Chunk->FinishSpawning(transform);
 			Chunks.Add(Chunk);
@@ -132,31 +133,50 @@ void ASphereChunk::PostEditChangeProperty(FPropertyChangedEvent& PropertyChanged
 		PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(ASphereChunk, NoiseSeed) ||
 		PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(ASphereChunk, FractalLacunarity) ||
 		PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(ASphereChunk, FractalGain) ||
-		PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(ASphereChunk, NoiseStrength))
+		PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(ASphereChunk, NoiseStrength) ||
+		PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(ASphereChunk, warpScale))
 	{
 		for (ATriangleSphere* Chunk : Chunks)
 		{
+			Chunk->WarpScale = warpScale;
 			Chunk->SetNoiseValues(Frequency, FractalOctaves, NoiseSeed, FractalLacunarity, FractalGain, NoiseStrength);
 		}
 	}
 
-	if (PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(ASphereChunk, CraterRadius) ||
-		PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(ASphereChunk, CraterFloor) ||
-		PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(ASphereChunk, RimSteepness) ||
+	if (PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(ASphereChunk, RimSteepness) ||
 		PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(ASphereChunk, RimHeight) ||
 		PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(ASphereChunk, Smoothfactor))
 	{
 		for (UCrater* Crater : Craters)
 		{
-			Crater->CraterRadius = CraterRadius;
-			Crater->CraterFloor = CraterFloor;
-			Crater->RimSteepness = RimSteepness;
-			Crater->RimHeight = RimHeight;
-			Crater->SmoothFactor = Smoothfactor;
+			if (Crater)
+			{
+				Crater->RimSteepness = RimSteepness;
+				Crater->RimHeight = RimHeight;
+				Crater->SmoothFactor = Smoothfactor;
+			}
 		}
 		for (ATriangleSphere* Chunk : Chunks)
 		{
-			Chunk->RefreshMoon();
+			if(Chunk->Craters.Num() > 0)
+				Chunk->RefreshMoon();
+		}
+	}
+
+	if (PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(ASphereChunk, MinCraterRadius) ||
+		PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(ASphereChunk, MaxCraterRadius) ||
+		PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(ASphereChunk, CraterRadiusBias))
+	{
+		for (UCrater* Crater : Craters)
+		{
+			if(Crater)
+				Crater->CraterRadius = GetCraterRadius();
+		}
+		for (ATriangleSphere* Chunk : Chunks)
+		{
+			Chunk->maxCraterRadius = (PlanetRadius / 4);
+			if (Chunk->Craters.Num() > 0)
+				Chunk->RefreshMoon();
 		}
 	}
 
@@ -171,8 +191,8 @@ void ASphereChunk::PostEditChangeProperty(FPropertyChangedEvent& PropertyChanged
 				newCrater->CraterCenter = FMath::VRand().GetSafeNormal() * PlanetRadius;
 				//DrawDebugSphere(GetWorld(), newCrater->CraterCenter + PlanetLocation, CraterRadius, 36, FColor::Blue, true);
 				newCrater->PlanetRadius = PlanetRadius;
-				newCrater->CraterRadius = CraterRadius;
-				newCrater->CraterFloor = CraterFloor;
+				newCrater->CraterRadius = GetCraterRadius();
+				newCrater->CraterFloor = GetCraterFloor();
 				newCrater->RimSteepness = RimSteepness;
 				newCrater->RimHeight = RimHeight;
 				newCrater->SmoothFactor = Smoothfactor;
@@ -187,6 +207,23 @@ void ASphereChunk::PostEditChangeProperty(FPropertyChangedEvent& PropertyChanged
 			}
 		}
 	}
+}
+
+float ASphereChunk::GetCraterRadius()
+{
+
+
+	float k = FMath::Pow(1 - CraterRadiusBias, 3);
+	float randVal = FMath::FRand();
+	float val = (randVal * k) / (randVal * k - randVal + 1);
+
+	UE_LOG(LogTemp, Warning, TEXT("k: %f, rand: %f, val: %f"), k, randVal, val);
+	return val * ((PlanetRadius / 4) - (PlanetRadius / 200)) + (PlanetRadius / 200);
+}
+
+float ASphereChunk::GetCraterFloor()
+{
+	return -(FMath::Pow(FMath::FRand(),2));
 }
 
 void ASphereChunk::Subdivide(int SubDivisions)
