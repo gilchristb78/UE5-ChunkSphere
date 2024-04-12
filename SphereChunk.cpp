@@ -62,7 +62,7 @@ void ASphereChunk::BeginPlay()
 			Chunk->FractalLacunarity = FractalLacunarity;
 			Chunk->FractalGain = FractalGain;
 			Chunk->NoiseStrength = NoiseStrength;
-			Chunk->Craters = Craters;
+			Chunk->TryAddCraters(Craters);
 			Chunk->FinishSpawning(transform);
 			Chunks.Add(Chunk);
 			ChunkRows[GetRow(i)][GetCol(i)] = Chunk;//.Insert(Chunk, GetCol(i));
@@ -105,15 +105,6 @@ void ASphereChunk::Tick(float DeltaTime)
 			if (GEngine)
 			{
 				GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Black, FString::Printf(TEXT("Dist: %f"), FVector::Dist(DebugLoc, EndLocation) / PlanetRadius));
-				if (Craters.Num() > 0)
-				{
-					GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::Printf(TEXT("CraterLoc: %f, %f, %f"), Craters[0]->CraterCenter.X, Craters[0]->CraterCenter.Y, Craters[0]->CraterCenter.Z));
-					GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Blue, FString::Printf(TEXT("Rad: %f"), Craters[0]->PlanetRadius));
-					GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Green, FString::Printf(TEXT("CratRad: %f"), Craters[0]->CraterRadius));
-					GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Purple, FString::Printf(TEXT("Floor: %f"), Craters[0]->CraterFloor));
-					GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Cyan, FString::Printf(TEXT("Steep: %f"), Craters[0]->RimSteepness));
-					GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Magenta, FString::Printf(TEXT("Height: %f"), Craters[0]->RimHeight));
-				}
 					
 			}
 				
@@ -173,6 +164,7 @@ void ASphereChunk::PostEditChangeProperty(FPropertyChangedEvent& PropertyChanged
 	{
 		if (Craters.Num() < CraterNum)
 		{
+			TArray<UCrater*> TempCraters;
 			for (int i = Craters.Num(); i < CraterNum; i++)
 			{
 				UCrater* newCrater = NewObject<UCrater>();
@@ -185,11 +177,12 @@ void ASphereChunk::PostEditChangeProperty(FPropertyChangedEvent& PropertyChanged
 				newCrater->RimHeight = RimHeight;
 				newCrater->SmoothFactor = Smoothfactor;
 				Craters.Add(newCrater);
+				TempCraters.Add(newCrater);
 			}
 
 			for (ATriangleSphere* Chunk : Chunks)
 			{
-				Chunk->Craters = Craters;
+				Chunk->TryAddCraters(TempCraters);
 				Chunk->RefreshMoon();
 			}
 		}
