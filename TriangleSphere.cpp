@@ -5,6 +5,7 @@
 #include "ProceduralMeshComponent.h"
 #include "FastNoiseLite.h"
 #include "Crater.h"
+#include "KismetProceduralMeshLibrary.h"
 
 // Sets default values
 ATriangleSphere::ATriangleSphere()
@@ -52,7 +53,7 @@ void ATriangleSphere::RefreshMoon()
 		float noiseX = Noise->GetNoise(location.X, location.Y, location.Z);
 		float noiseY = Noise->GetNoise(location.X + 520, location.Y + 130, location.Z + 70);
 		float noiseZ = Noise->GetNoise(location.X + 150, location.Y + 80, location.Z + 40);
-		float noise = Noise->GetNoise(location.X + noiseZ * PlanetRadius, location.Y + noiseY* PlanetRadius, location.Z + noiseZ * PlanetRadius);
+		float noise = Noise->GetNoise(location.X + noiseZ * (PlanetRadius / 12), location.Y + noiseY* (PlanetRadius / 12), location.Z + noiseZ * (PlanetRadius / 12));
 		
 
 		float craterheight = 0;
@@ -65,8 +66,34 @@ void ATriangleSphere::RefreshMoon()
 
 		vert = location - PlanetCenter + (vert.GetSafeNormal() * noise * NoiseStrength) + (vert.GetSafeNormal() * craterheight);
 	}
+	TArray<FVector> Normals;
+	TArray<FProcMeshTangent> Tangents;
+
+	UKismetProceduralMeshLibrary::CalculateTangentsForMesh(Vertices, Triangles, TArray<FVector2D>(), Normals, Tangents); //todo uv's
+
 	Mesh->SetMaterial(0, Material);
-	Mesh->CreateMeshSection(0, Vertices, Triangles, TArray<FVector>(), TArray<FVector2D>(), TArray<FColor>(), TArray<FProcMeshTangent>(), true);
+	Mesh->CreateMeshSection(0, Vertices, Triangles, Normals, TArray<FVector2D>(), TArray<FColor>(), TArray<FProcMeshTangent>(), true);
+}
+
+void ATriangleSphere::TryAddCrater(UCrater* Crater)
+{
+	FVector Centroid = GetCentroid();
+	float centroidDist = GetDist(Corners[0], Centroid);
+	float MainDist = GetDist(Crater->CraterCenter, Centroid);
+	//UE_LOG(LogTemp, Warning, TEXT("CD: %f, MD: %f, CR: %f"), centroidDist, MainDist, Crater->CraterRadius);
+	if (MainDist < centroidDist + 2 * Crater->CraterRadius)
+	{
+		Craters.Add(Crater);
+	}
+
+}
+
+void ATriangleSphere::TryAddCraters(TArray<UCrater*> craters)
+{
+	for (int i = 0; i < craters.Num(); i++)
+	{
+		TryAddCrater(craters[i]);
+	}
 }
 
 void ATriangleSphere::RefreshVertices(int Resolution)
@@ -229,5 +256,20 @@ void ATriangleSphere::PostEditChangeProperty(FPropertyChangedEvent& PropertyChan
 	}
 }
 #endif
+
+float ATriangleSphere::GetDist(FVector Point1, FVector Point2)
+{
+	FVector v1 = Point1.GetSafeNormal() * PlanetRadius;
+	FVector v2 = Point2.GetSafeNormal() * PlanetRadius;
+	return PlanetRadius * FMath::Acos(((v1.X * v2.X) + (v1.Y * v2.Y) + (v1.Z * v2.Z)) / (PlanetRadius * PlanetRadius));
+}
+FVector ATriangleSphere::GetCentroid()
+{
+	float X1 = (Corners[1].X + Corners[2].X + Corners[0].X) / 3;
+	float Y1 = (Corners[1].Y + Corners[2].Y + Corners[0].Y) / 3;
+	float Z1 = (Corners[1].Z + Corners[2].Z + Corners[0].Z) / 3;
+	return FVector(X1, Y1, Z1);
+}
+
 
 

@@ -50,12 +50,19 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 	void RefreshMoon();
+
+	void TryAddCrater(UCrater* Crater);
+	void TryAddCraters(TArray<UCrater*> craters);
 	
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
 
 private:
+
+	float GetDist(FVector Point1, FVector Point2);
+	FVector GetCentroid();
+
 
 	TObjectPtr<UProceduralMeshComponent> Mesh;
 	
