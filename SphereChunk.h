@@ -63,14 +63,20 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Noise")
 	float NoiseStrength = 2000.0f;
 
+	UPROPERTY(EditAnywhere, Category = "Noise")
+	float warpScale = 80;
+
 	UPROPERTY(EditAnywhere, Category = "Crater")
 	int CraterNum = 1;
 
 	UPROPERTY(EditAnywhere, Category = "Crater")
-	float CraterRadius = 250.0f;
+	float MinCraterRadius = 250.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Crater")
-	float CraterFloor = -0.2f;
+	float MaxCraterRadius = 5000.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Crater")
+	float CraterRadiusBias = 0.75;
 
 	UPROPERTY(EditAnywhere, Category = "Crater")
 	float RimSteepness = 0.23f;
@@ -80,6 +86,9 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Crater")
 	float Smoothfactor = 0.2f;
+
+	
+	
 
 protected:
 	// Called when the game starts or when spawned
@@ -94,6 +103,9 @@ public:
 #endif
 
 private:
+
+	float GetCraterRadius();
+	float GetCraterFloor();
 
 	UPROPERTY()
 	TArray<UCrater*> Craters;

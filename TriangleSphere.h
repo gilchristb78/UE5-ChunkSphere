@@ -39,6 +39,10 @@ public:
 	float FractalGain = 0.5f;
 	float NoiseStrength = 2000.0f;
 
+	float WarpScale = 80;
+
+	float maxCraterRadius = 1000.0f;
+
 	UPROPERTY()
 	TArray<UCrater*> Craters;
 

@@ -51,9 +51,9 @@ void ATriangleSphere::RefreshMoon()
 		FVector PlanetCenter = Corners[0].GetSafeNormal() * PlanetRadius;
 		FVector location = (vert.GetSafeNormal() * PlanetRadius);
 		float noiseX = Noise->GetNoise(location.X, location.Y, location.Z);
-		float noiseY = Noise->GetNoise(location.X + 520, location.Y + 130, location.Z + 70);
-		float noiseZ = Noise->GetNoise(location.X + 150, location.Y + 80, location.Z + 40);
-		float noise = Noise->GetNoise(location.X + noiseZ * (PlanetRadius / 12), location.Y + noiseY* (PlanetRadius / 12), location.Z + noiseZ * (PlanetRadius / 12));
+		float noiseY = Noise->GetNoise(location.X + 52, location.Y + 13, location.Z + 7);
+		float noiseZ = Noise->GetNoise(location.X + 15, location.Y + 8, location.Z + 4);
+		float noise = Noise->GetNoise(location.X + (noiseZ * WarpScale), location.Y + (noiseY * WarpScale), location.Z + (noiseZ * WarpScale));
 		
 
 		float craterheight = 0;
@@ -61,7 +61,6 @@ void ATriangleSphere::RefreshMoon()
 		{
 			float offset = Crater->GetHeight(location);
 			craterheight += offset;
-			
 		}
 
 		vert = location - PlanetCenter + (vert.GetSafeNormal() * noise * NoiseStrength) + (vert.GetSafeNormal() * craterheight);
@@ -81,7 +80,8 @@ void ATriangleSphere::TryAddCrater(UCrater* Crater)
 	float centroidDist = GetDist(Corners[0], Centroid);
 	float MainDist = GetDist(Crater->CraterCenter, Centroid);
 	//UE_LOG(LogTemp, Warning, TEXT("CD: %f, MD: %f, CR: %f"), centroidDist, MainDist, Crater->CraterRadius);
-	if (MainDist < centroidDist + 2 * Crater->CraterRadius)
+	float multiplier = 1 + Crater->RimHeight + 2; //2 for fudgibility
+	if (MainDist < (1.4 * centroidDist) + (multiplier * maxCraterRadius))//1.4 = fudgability number
 	{
 		Craters.Add(Crater);
 	}
