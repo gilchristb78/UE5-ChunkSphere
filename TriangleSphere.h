@@ -30,7 +30,7 @@ public:
 	float PlanetRadius;
 
 	void SetMaterial(UMaterialInterface* Mat);
-	void SetNoiseValues(float Freq, int Octaves, int Seed, float Lac, float Gain, float Strength);
+	void SetNoiseValues(float Freq, int Octaves, int Seed, float Lac, float Gain, float Strength, float warp);
 
 	float Frequency = 0.01f;
 	int FractalOctaves = 3;
@@ -40,7 +40,7 @@ public:
 	float NoiseStrength = 2000.0f;
 
 	float WarpScale = 80;
-
+	float debug = false;
 	float maxCraterRadius = 1000.0f;
 
 	UPROPERTY()
@@ -80,4 +80,5 @@ private:
 	int GetTriangleNum(int x);
 	void SetNoiseVariables();
 	
+	FVector CalculateTriplanarUVs(const FVector& Vertex);
 };

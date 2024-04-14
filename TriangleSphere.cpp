@@ -46,15 +46,34 @@ void ATriangleSphere::RefreshMoon()
 	RefreshVertices(Resolution);
 	RefreshTriangles(Resolution);
 
+	TArray<FVector2D> UVs;
+
 	for (FVector& vert : Vertices)
 	{
+		//FVector PlanarUVs = CalculateTriplanarUVs(vert);
+
+		FVector2D UVX = FVector2D(vert.Y * 0.5, vert.Z * 0.5);
+		FVector2D UVY = FVector2D(vert.X * 0.5, vert.Z * 0.5);
+		FVector2D UVZ = FVector2D(vert.X * 0.5, vert.Y * 0.5);
+
+		FVector norm = FVector(FMath::Abs(vert.X), FMath::Abs(vert.Y), FMath::Abs(vert.Z));
+		FVector Mask = FVector();
+		Mask.X = (norm.X > norm.Y && norm.X > norm.Z);
+		Mask.Y = (norm.Y > norm.X && norm.Y > norm.Z);
+		Mask.Z = (norm.Z > norm.X && norm.Z > norm.Y);
+
+		FVector2D UV = (UVX * Mask.X) +(UVY * Mask.Y) + (UVZ * Mask.Z);
+		
+		UVs.Add(UV);
+
 		FVector PlanetCenter = Corners[0].GetSafeNormal() * PlanetRadius;
 		FVector location = (vert.GetSafeNormal() * PlanetRadius);
-		float noiseX = Noise->GetNoise(location.X, location.Y, location.Z);
+		/*float noiseX = Noise->GetNoise(location.X, location.Y, location.Z);
 		float noiseY = Noise->GetNoise(location.X + 52, location.Y + 13, location.Z + 7);
-		float noiseZ = Noise->GetNoise(location.X + 15, location.Y + 8, location.Z + 4);
-		float noise = Noise->GetNoise(location.X + (noiseZ * WarpScale), location.Y + (noiseY * WarpScale), location.Z + (noiseZ * WarpScale));
-		
+		float noiseZ = Noise->GetNoise(location.X + 15, location.Y + 8, location.Z + 4);*/
+		FVector WarpedLoc = location;
+		Noise->DomainWarp(WarpedLoc.X, WarpedLoc.Y, WarpedLoc.Z);
+		float noise = Noise->GetNoise(WarpedLoc.X / 50 /*+ (noiseZ * WarpScale)*/, WarpedLoc.Y / 50/*+ (noiseY * WarpScale)*/, WarpedLoc.Z / 50/*+ (noiseZ * WarpScale)*/);
 
 		float craterheight = 0;
 		for(UCrater* Crater : Craters)
@@ -68,10 +87,12 @@ void ATriangleSphere::RefreshMoon()
 	TArray<FVector> Normals;
 	TArray<FProcMeshTangent> Tangents;
 
-	UKismetProceduralMeshLibrary::CalculateTangentsForMesh(Vertices, Triangles, TArray<FVector2D>(), Normals, Tangents); //todo uv's
+	//TODO get the edges of all touching chunks and use that for normals aswell
+	//"fakeIt"
+	UKismetProceduralMeshLibrary::CalculateTangentsForMesh(Vertices, Triangles, UVs, Normals, Tangents); //todo uv's
 
 	Mesh->SetMaterial(0, Material);
-	Mesh->CreateMeshSection(0, Vertices, Triangles, Normals, TArray<FVector2D>(), TArray<FColor>(), TArray<FProcMeshTangent>(), true);
+	Mesh->CreateMeshSection(0, Vertices, Triangles, Normals, UVs, TArray<FColor>(), Tangents, true);
 }
 
 void ATriangleSphere::TryAddCrater(UCrater* Crater)
@@ -80,7 +101,7 @@ void ATriangleSphere::TryAddCrater(UCrater* Crater)
 	float centroidDist = GetDist(Corners[0], Centroid);
 	float MainDist = GetDist(Crater->CraterCenter, Centroid);
 	//UE_LOG(LogTemp, Warning, TEXT("CD: %f, MD: %f, CR: %f"), centroidDist, MainDist, Crater->CraterRadius);
-	float multiplier = 1 + Crater->RimHeight + 2; //2 for fudgibility
+	float multiplier = 1 + Crater->RimHeight * 2; //2 for fudgibility
 	if (MainDist < (1.4 * centroidDist) + (multiplier * maxCraterRadius))//1.4 = fudgability number
 	{
 		Craters.Add(Crater);
@@ -107,13 +128,47 @@ void ATriangleSphere::RefreshVertices(int Resolution)
 	{
 		for (int Corner2 = Corner1 + 1; Corner2 <= 2; Corner2++)
 		{
+			
 			for (int i = 1; i < Resolution; i++)
 			{
 				Vertices.Add(FMath::LerpStable(Corners[Corner1], Corners[Corner2], float(i) / Resolution));
 			}
 		}
 	}
+	//FVector tester2 = FMath::LerpStable(Corners[Corner0], Corners[Corner1], float(1) / 2);
+	//FVector tester = Corners[Corner1] - (tester2 - Corners[Corner1]);
+	if (debug)
+	{
+		//these are the "extended" corners connect 2 nearest a corner and the corner for a negative triangle
+		//also make strips between them for negative edge triangles
+		//use this for normal calcs
+		float test = 1.0f / Resolution;
+		float test2 = test + 1.0f;
+		FVector tester = Corners[0] - ((Corners[1] - Corners[0]) * test);
+		DrawDebugSphere(GetWorld(), (tester.GetSafeNormal() * (PlanetRadius + 250)) + (GetActorLocation() - (Corners[0].GetSafeNormal() * PlanetRadius)), 500, 30, FColor::Blue, true);
+		tester = Corners[0] + ((Corners[1] - Corners[0]) * test2);
+		DrawDebugSphere(GetWorld(), (tester.GetSafeNormal() * PlanetRadius) + (GetActorLocation() - (Corners[0].GetSafeNormal() * PlanetRadius)), 500, 30, FColor::Blue, true);
 
+		tester = Corners[0] - ((Corners[2] - Corners[0]) * test);
+		DrawDebugSphere(GetWorld(), (tester.GetSafeNormal() * (PlanetRadius + 250)) + (GetActorLocation() - (Corners[0].GetSafeNormal() * PlanetRadius)), 530, 30, FColor::Emerald, true);
+		tester = Corners[0] + ((Corners[2] - Corners[0]) * test2);
+		DrawDebugSphere(GetWorld(), (tester.GetSafeNormal() * (PlanetRadius + 250)) + (GetActorLocation() - (Corners[0].GetSafeNormal() * PlanetRadius)), 530, 30, FColor::Green, true);
+
+		tester = Corners[1] - ((Corners[2] - Corners[1]) * test);
+		DrawDebugSphere(GetWorld(), (tester.GetSafeNormal() * (PlanetRadius + 250)) + (GetActorLocation() - (Corners[0].GetSafeNormal() * PlanetRadius)), 500, 30, FColor::Red, true);
+		tester = Corners[1] + ((Corners[2] - Corners[1]) * test2);
+		DrawDebugSphere(GetWorld(), (tester.GetSafeNormal() * (PlanetRadius + 250)) + (GetActorLocation() - (Corners[0].GetSafeNormal() * PlanetRadius)), 500, 30, FColor::Red, true);
+		//add triangles on corner
+		//for each vertex on edge:
+		// corner[0] -> negcorners[0]
+		//edge[0] -> neg[0] [1] 
+		// edge[01] -> neg[1]
+		//edge[1] -> neg[1] [2]
+		// edge [12] -> neg[2]
+		// edge[2] -> neg[2] [3] 
+		//corner[1] -> negcorners[1]
+		//etc
+	}
 	//Add the Corners at the right spot
 	Vertices.Insert(Corners[0], 0);
 	Vertices.Insert(Corners[1], Resolution);
@@ -213,10 +268,22 @@ void ATriangleSphere::SetNoiseVariables()
 	Noise->SetFrequency(Frequency);
 	Noise->SetNoiseType(FastNoiseLite::NoiseType_Perlin);
 	Noise->SetFractalType(FastNoiseLite::FractalType_FBm);
+	Noise->SetDomainWarpType(FastNoiseLite::DomainWarpType_OpenSimplex2);
+	Noise->SetDomainWarpAmp(WarpScale);
 	Noise->SetFractalOctaves(FractalOctaves);
 	Noise->SetFractalLacunarity(FractalLacunarity);
 	Noise->SetFractalGain(FractalGain);
 	
+}
+
+FVector ATriangleSphere::CalculateTriplanarUVs(const FVector& Vertex)
+{
+	FVector PlanarUVs;
+	float ChunkSize = GetDist(Corners[0], Corners[1]);
+	PlanarUVs.X = FMath::Abs(Vertex.Y / ChunkSize); // Calculate X component based on Y coordinate
+	PlanarUVs.Y = FMath::Abs(Vertex.Z / ChunkSize); // Calculate Y component based on Z coordinate
+	PlanarUVs.Z = FMath::Abs(Vertex.X / ChunkSize); // Calculate Z component based on X coordinate
+	return PlanarUVs;
 }
 
 void ATriangleSphere::SetMaterial(UMaterialInterface* Mat)
@@ -229,7 +296,7 @@ void ATriangleSphere::SetMaterial(UMaterialInterface* Mat)
 	
 }
 
-void ATriangleSphere::SetNoiseValues(float Freq, int Octaves, int Seed, float Lac, float Gain, float Strength)
+void ATriangleSphere::SetNoiseValues(float Freq, int Octaves, int Seed, float Lac, float Gain, float Strength, float warp)
 {
 	Frequency = Freq;
 	FractalOctaves = Octaves;
@@ -237,6 +304,7 @@ void ATriangleSphere::SetNoiseValues(float Freq, int Octaves, int Seed, float La
 	FractalLacunarity = Lac;
 	FractalGain = Gain;
 	NoiseStrength = Strength;
+	WarpScale = warp;
 	SetNoiseVariables();
 	RefreshMoon();
 }
