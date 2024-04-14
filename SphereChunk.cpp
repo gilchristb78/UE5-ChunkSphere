@@ -63,6 +63,8 @@ void ASphereChunk::BeginPlay()
 			Chunk->FractalGain = FractalGain;
 			Chunk->NoiseStrength = NoiseStrength;
 			Chunk->maxCraterRadius = (PlanetRadius / 4);
+			if (i == 0)
+				Chunk->debug = true;
 			Chunk->TryAddCraters(Craters);
 			Chunk->FinishSpawning(transform);
 			Chunks.Add(Chunk);
@@ -105,7 +107,7 @@ void ASphereChunk::Tick(float DeltaTime)
 
 			if (GEngine)
 			{
-				GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Black, FString::Printf(TEXT("Dist: %f"), FVector::Dist(DebugLoc, EndLocation) / PlanetRadius));
+				//GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Black, FString::Printf(TEXT("Dist: %f"), FVector::Dist(DebugLoc, EndLocation) / PlanetRadius));
 					
 			}
 				
@@ -138,8 +140,7 @@ void ASphereChunk::PostEditChangeProperty(FPropertyChangedEvent& PropertyChanged
 	{
 		for (ATriangleSphere* Chunk : Chunks)
 		{
-			Chunk->WarpScale = warpScale;
-			Chunk->SetNoiseValues(Frequency, FractalOctaves, NoiseSeed, FractalLacunarity, FractalGain, NoiseStrength);
+			Chunk->SetNoiseValues(Frequency, FractalOctaves, NoiseSeed, FractalLacunarity, FractalGain, NoiseStrength, warpScale);
 		}
 	}
 
@@ -217,7 +218,6 @@ float ASphereChunk::GetCraterRadius()
 	float randVal = FMath::FRand();
 	float val = (randVal * k) / (randVal * k - randVal + 1);
 
-	UE_LOG(LogTemp, Warning, TEXT("k: %f, rand: %f, val: %f"), k, randVal, val);
 	return val * ((PlanetRadius / 4) - (PlanetRadius / 200)) + (PlanetRadius / 200);
 }
 
