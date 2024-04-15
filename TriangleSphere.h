@@ -67,6 +67,8 @@ private:
 	float GetDist(FVector Point1, FVector Point2);
 	FVector GetCentroid();
 
+	int VerticeNum;
+	int TriangleNum;
 
 	TObjectPtr<UProceduralMeshComponent> Mesh;
 	
@@ -76,6 +78,7 @@ private:
 	
 	void RefreshVertices(int Resolution);
 	void RefreshTriangles(int Resolution);
+	void AddBorder(int Resolution);
 	TArray<int> GetVerticeRow(int RowNum, int Resolution);
 	int GetTriangleNum(int x);
 	void SetNoiseVariables();

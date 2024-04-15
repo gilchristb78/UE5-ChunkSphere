@@ -45,6 +45,7 @@ void ATriangleSphere::RefreshMoon()
 	int Resolution = 1 << SubDivisions;
 	RefreshVertices(Resolution);
 	RefreshTriangles(Resolution);
+	AddBorder(Resolution);
 
 	TArray<FVector2D> UVs;
 
@@ -91,8 +92,15 @@ void ATriangleSphere::RefreshMoon()
 	//"fakeIt"
 	UKismetProceduralMeshLibrary::CalculateTangentsForMesh(Vertices, Triangles, UVs, Normals, Tangents); //todo uv's
 
+	Vertices.SetNum(VerticeNum);
+	Triangles.SetNum(TriangleNum);
+	UVs.SetNum(VerticeNum);
+	Normals.SetNum(VerticeNum);
+	Tangents.SetNum(VerticeNum);
+
 	Mesh->SetMaterial(0, Material);
 	Mesh->CreateMeshSection(0, Vertices, Triangles, Normals, UVs, TArray<FColor>(), Tangents, true);
+
 }
 
 void ATriangleSphere::TryAddCrater(UCrater* Crater)
@@ -137,38 +145,7 @@ void ATriangleSphere::RefreshVertices(int Resolution)
 	}
 	//FVector tester2 = FMath::LerpStable(Corners[Corner0], Corners[Corner1], float(1) / 2);
 	//FVector tester = Corners[Corner1] - (tester2 - Corners[Corner1]);
-	if (debug)
-	{
-		//these are the "extended" corners connect 2 nearest a corner and the corner for a negative triangle
-		//also make strips between them for negative edge triangles
-		//use this for normal calcs
-		float test = 1.0f / Resolution;
-		float test2 = test + 1.0f;
-		FVector tester = Corners[0] - ((Corners[1] - Corners[0]) * test);
-		DrawDebugSphere(GetWorld(), (tester.GetSafeNormal() * (PlanetRadius + 250)) + (GetActorLocation() - (Corners[0].GetSafeNormal() * PlanetRadius)), 500, 30, FColor::Blue, true);
-		tester = Corners[0] + ((Corners[1] - Corners[0]) * test2);
-		DrawDebugSphere(GetWorld(), (tester.GetSafeNormal() * PlanetRadius) + (GetActorLocation() - (Corners[0].GetSafeNormal() * PlanetRadius)), 500, 30, FColor::Blue, true);
-
-		tester = Corners[0] - ((Corners[2] - Corners[0]) * test);
-		DrawDebugSphere(GetWorld(), (tester.GetSafeNormal() * (PlanetRadius + 250)) + (GetActorLocation() - (Corners[0].GetSafeNormal() * PlanetRadius)), 530, 30, FColor::Emerald, true);
-		tester = Corners[0] + ((Corners[2] - Corners[0]) * test2);
-		DrawDebugSphere(GetWorld(), (tester.GetSafeNormal() * (PlanetRadius + 250)) + (GetActorLocation() - (Corners[0].GetSafeNormal() * PlanetRadius)), 530, 30, FColor::Green, true);
-
-		tester = Corners[1] - ((Corners[2] - Corners[1]) * test);
-		DrawDebugSphere(GetWorld(), (tester.GetSafeNormal() * (PlanetRadius + 250)) + (GetActorLocation() - (Corners[0].GetSafeNormal() * PlanetRadius)), 500, 30, FColor::Red, true);
-		tester = Corners[1] + ((Corners[2] - Corners[1]) * test2);
-		DrawDebugSphere(GetWorld(), (tester.GetSafeNormal() * (PlanetRadius + 250)) + (GetActorLocation() - (Corners[0].GetSafeNormal() * PlanetRadius)), 500, 30, FColor::Red, true);
-		//add triangles on corner
-		//for each vertex on edge:
-		// corner[0] -> negcorners[0]
-		//edge[0] -> neg[0] [1] 
-		// edge[01] -> neg[1]
-		//edge[1] -> neg[1] [2]
-		// edge [12] -> neg[2]
-		// edge[2] -> neg[2] [3] 
-		//corner[1] -> negcorners[1]
-		//etc
-	}
+	
 	//Add the Corners at the right spot
 	Vertices.Insert(Corners[0], 0);
 	Vertices.Insert(Corners[1], Resolution);
@@ -183,6 +160,7 @@ void ATriangleSphere::RefreshVertices(int Resolution)
 			Vertices.Add(FMath::LerpStable(Vertices[i], Vertices[Resolution + i], float(j) / float(i)));
 		}
 	}
+
 }
 
 void ATriangleSphere::RefreshTriangles(int Resolution)
@@ -215,6 +193,152 @@ void ATriangleSphere::RefreshTriangles(int Resolution)
 
 		TopRow = BottomRow;
 	}
+}
+
+void ATriangleSphere::AddBorder(int Resolution)
+{
+
+		//these are the "extended" corners connect 2 nearest a corner and the corner for a negative triangle
+		//also make strips between them for negative edge triangles
+		//use this for normal calcs
+		float test = 1.0f / Resolution;
+		float test2 = test + 1.0f;
+		
+		VerticeNum = Vertices.Num();
+		TriangleNum = Triangles.Num();
+
+		FVector Corner1 = Corners[0] - ((Corners[2] - Corners[0]) * test);
+		FVector Corner2 = Corners[1] - ((Corners[2] - Corners[1]) * test);
+		
+		int top = Vertices.Num();
+		Vertices.Add(Corner1);
+		for (int i = 1; i <= Resolution; i++)
+		{
+			Vertices.Add(FMath::LerpStable(Corner1, Corner2, float(i) / (Resolution + 1)));
+		}
+		Vertices.Add(Corner2);
+
+		for (int bot = 0; bot < Resolution; bot++)
+		{
+			
+			Triangles.Add(top + 1);
+			Triangles.Add(top);
+			Triangles.Add(bot);
+			top++;
+
+			Triangles.Add(top);
+			Triangles.Add(bot);
+			Triangles.Add(bot + 1);
+			
+		}
+
+		Triangles.Add(Resolution);
+		Triangles.Add(Vertices.Num() - 1);
+		Triangles.Add(Vertices.Num() - 2);
+
+		Corner1 = Corners[0] + ((Corners[1] - Corners[0]) * test2);
+		
+		Vertices.Add(Corner1);
+		
+		Triangles.Add(Vertices.Num() - 1);
+		Triangles.Add(Vertices.Num() - 2);
+		Triangles.Add(Resolution);
+
+
+
+		top = Vertices.Num() - 1;
+		Corner2 = Corners[0] + ((Corners[2] - Corners[0]) * test2);
+		for (int i = 1; i <= Resolution; i++)
+		{
+			Vertices.Add(FMath::LerpStable(Corner1, Corner2, float(i) / (Resolution + 1)));
+		}
+		Vertices.Add(Corner2);
+		
+		for (int bot = Resolution; bot < (3 * Resolution) - 1; bot++)
+		{
+
+			Triangles.Add(top + 1);
+			Triangles.Add(top);
+			Triangles.Add(bot);
+			top++;
+
+			Triangles.Add(top);
+			Triangles.Add(bot);
+			if (bot == Resolution)
+				bot = 2 * Resolution;
+
+			Triangles.Add(bot + 1);
+
+		}
+
+		Triangles.Add(top + 1);
+		Triangles.Add(top);
+		Triangles.Add((3 * Resolution) - 1);
+		top++;
+
+		Triangles.Add(top);
+		Triangles.Add((3 * Resolution) - 1);
+		Triangles.Add(2 * Resolution);
+
+
+		
+		Triangles.Add(top + 1);
+		Triangles.Add(top);
+		Triangles.Add(2 * Resolution);
+
+
+		Corner1 = Corners[1] + ((Corners[2] - Corners[1]) * test2);
+		Vertices.Add(Corner1);
+
+		Triangles.Add(Vertices.Num() - 1);
+		Triangles.Add(Vertices.Num() - 2);
+		Triangles.Add(2 * Resolution);
+
+		top = Vertices.Num() - 1;
+		Corner2 = Corners[0] - ((Corners[1] - Corners[0]) * test);
+		for (int i = 0; i <= Resolution; i++)
+		{
+			Vertices.Add(FMath::LerpStable(Corner1, Corner2, float(i) / (Resolution + 1)));
+		}
+		Vertices.Add(Corner2);
+
+		for (int bot = 2 * Resolution; bot > Resolution + 1; bot--)
+		{
+
+			Triangles.Add(top + 1);
+			Triangles.Add(top);
+			Triangles.Add(bot);
+			top++;
+
+			Triangles.Add(top);
+			Triangles.Add(bot);
+			Triangles.Add(bot - 1);
+
+		}
+
+		Triangles.Add(top + 1);
+		Triangles.Add(top);
+		Triangles.Add(Resolution + 1);
+		top++;
+
+		Triangles.Add(top);
+		Triangles.Add(Resolution + 1);
+		Triangles.Add(0);
+
+		Triangles.Add(top + 1);
+		Triangles.Add(top);
+		Triangles.Add(0);
+		top++;
+
+		Triangles.Add(top + 1);
+		Triangles.Add(top);
+		Triangles.Add(0);
+
+		Triangles.Add(VerticeNum);
+		Triangles.Add(top + 1);
+		Triangles.Add(0);
+
+
 }
 
 TArray<int> ATriangleSphere::GetVerticeRow(int RowNum, int Resolution)
