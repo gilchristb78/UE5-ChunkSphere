@@ -2,16 +2,13 @@
 
 
 #include "TriangleSphere.h"
-#include "ProceduralMeshComponent.h"
-#include "FastNoiseLite.h"
-#include "Crater.h"
-#include "KismetProceduralMeshLibrary.h"
+
 
 // Sets default values
 ATriangleSphere::ATriangleSphere()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
 	Mesh = CreateDefaultSubobject<UProceduralMeshComponent>("Mesh");
 	Mesh->SetCastShadow(false);
@@ -25,322 +22,85 @@ void ATriangleSphere::BeginPlay()
 {
 	Super::BeginPlay();
 
-	SetNoiseVariables();
+	
 
-	if(Vertices.IsEmpty())
+	if (MeshData.Vertices.IsEmpty()) //Only Set Variables and refresh moon if we havent done it yet.
+	{
 		RefreshMoon();
+	}
+		
 	
 	
 }
 
-// Called every frame
-void ATriangleSphere::Tick(float DeltaTime)
+/* If Values Are Changed within the editor, update the appropriate values */
+#if WITH_EDITOR
+void ATriangleSphere::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
-	Super::Tick(DeltaTime);
+	Super::PostEditChangeProperty(PropertyChangedEvent);
 
+	if (PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(ATriangleSphere, SubDivisions))
+	{
+		RefreshMoon(); // Call CreatePlanet() whenever SubDivisions changes
+	}
+	if (PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(ATriangleSphere, Material))
+	{
+		SetMaterial(Material);
+	}
 }
+#endif
 
+/* Recalculate All Vertices and Triangles then Set the Mesh */
 void ATriangleSphere::RefreshMoon()
 {
 	int Resolution = 1 << SubDivisions;
+	
 	RefreshVertices(Resolution);
 	RefreshTriangles(Resolution);
+	
 	AddBorder(Resolution);
-
-	TArray<FVector2D> UVs;
-
-	for (FVector& vert : Vertices)
-	{
-		//FVector PlanarUVs = CalculateTriplanarUVs(vert);
-
-		FVector2D UVX = FVector2D(vert.Y * 0.5, vert.Z * 0.5);
-		FVector2D UVY = FVector2D(vert.X * 0.5, vert.Z * 0.5);
-		FVector2D UVZ = FVector2D(vert.X * 0.5, vert.Y * 0.5);
-
-		FVector norm = FVector(FMath::Abs(vert.X), FMath::Abs(vert.Y), FMath::Abs(vert.Z));
-		FVector Mask = FVector();
-		Mask.X = (norm.X > norm.Y && norm.X > norm.Z);
-		Mask.Y = (norm.Y > norm.X && norm.Y > norm.Z);
-		Mask.Z = (norm.Z > norm.X && norm.Z > norm.Y);
-
-		FVector2D UV = (UVX * Mask.X) +(UVY * Mask.Y) + (UVZ * Mask.Z);
-		
-		UVs.Add(UV);
-
-		FVector PlanetCenter = Corners[0].GetSafeNormal() * PlanetRadius;
-		FVector location = (vert.GetSafeNormal() * PlanetRadius);
-		/*float noiseX = Noise->GetNoise(location.X, location.Y, location.Z);
-		float noiseY = Noise->GetNoise(location.X + 52, location.Y + 13, location.Z + 7);
-		float noiseZ = Noise->GetNoise(location.X + 15, location.Y + 8, location.Z + 4);*/
-		FVector WarpedLoc = location;
-		Noise->DomainWarp(WarpedLoc.X, WarpedLoc.Y, WarpedLoc.Z);
-		float noise = Noise->GetNoise(WarpedLoc.X / 50 /*+ (noiseZ * WarpScale)*/, WarpedLoc.Y / 50/*+ (noiseY * WarpScale)*/, WarpedLoc.Z / 50/*+ (noiseZ * WarpScale)*/);
-
-		float craterheight = 0;
-		for(UCrater* Crater : Craters)
-		{
-			float offset = Crater->GetHeight(location);
-			craterheight += offset;
-		}
-
-		vert = location - PlanetCenter + (vert.GetSafeNormal() * noise * NoiseStrength) + (vert.GetSafeNormal() * craterheight);
-	}
-	TArray<FVector> Normals;
-	TArray<FProcMeshTangent> Tangents;
-
-	//TODO get the edges of all touching chunks and use that for normals aswell
-	//"fakeIt"
-	UKismetProceduralMeshLibrary::CalculateTangentsForMesh(Vertices, Triangles, UVs, Normals, Tangents); //todo uv's
-
-	Vertices.SetNum(VerticeNum);
-	Triangles.SetNum(TriangleNum);
-	UVs.SetNum(VerticeNum);
-	Normals.SetNum(VerticeNum);
-	Tangents.SetNum(VerticeNum);
+	SetFinalMaterialValues();
 
 	Mesh->SetMaterial(0, Material);
-	Mesh->CreateMeshSection(0, Vertices, Triangles, Normals, UVs, TArray<FColor>(), Tangents, true);
+	Mesh->CreateMeshSection(0, MeshData.Vertices, MeshData.Triangles, MeshData.Normals, MeshData.UV0, TArray<FColor>(), MeshData.Tangents, true);
 
 }
 
-void ATriangleSphere::TryAddCrater(UCrater* Crater)
-{
-	FVector Centroid = GetCentroid();
-	float centroidDist = GetDist(Corners[0], Centroid);
-	float MainDist = GetDist(Crater->CraterCenter, Centroid);
-	//UE_LOG(LogTemp, Warning, TEXT("CD: %f, MD: %f, CR: %f"), centroidDist, MainDist, Crater->CraterRadius);
-	float multiplier = 1 + Crater->RimHeight * 2; //2 for fudgibility
-	if (MainDist < (1.4 * centroidDist) + (multiplier * maxCraterRadius))//1.4 = fudgability number
-	{
-		Craters.Add(Crater);
-	}
-
-}
-
-void ATriangleSphere::TryAddCraters(TArray<UCrater*> craters)
-{
-	for (int i = 0; i < craters.Num(); i++)
-	{
-		TryAddCrater(craters[i]);
-	}
-}
-
+/* Given Resolution, Reset Vertices Array and Repopulate */
 void ATriangleSphere::RefreshVertices(int Resolution)
 {
-	
 	//Reset Array
-	Vertices = TArray<FVector>();
+	MeshData.Vertices = TArray<FVector>();
 
 	//Make the edges of the Triangle (0 -> 1, 0 -> 2, 1 -> 2)
 	for (int Corner1 = 0; Corner1 < 2; Corner1++)
 	{
 		for (int Corner2 = Corner1 + 1; Corner2 <= 2; Corner2++)
 		{
-			
+
 			for (int i = 1; i < Resolution; i++)
 			{
-				Vertices.Add(FMath::LerpStable(Corners[Corner1], Corners[Corner2], float(i) / Resolution));
+				MeshData.Vertices.Add(FMath::LerpStable(Corners[Corner1], Corners[Corner2], float(i) / Resolution));
 			}
 		}
 	}
-	//FVector tester2 = FMath::LerpStable(Corners[Corner0], Corners[Corner1], float(1) / 2);
-	//FVector tester = Corners[Corner1] - (tester2 - Corners[Corner1]);
-	
-	//Add the Corners at the right spot
-	Vertices.Insert(Corners[0], 0);
-	Vertices.Insert(Corners[1], Resolution);
-	Vertices.Insert(Corners[2], Resolution * 2);
 
+	//Add the Corners at the right spot
+	MeshData.Vertices.Insert(Corners[0], 0);
+	MeshData.Vertices.Insert(Corners[1], Resolution);
+	MeshData.Vertices.Insert(Corners[2], Resolution * 2);
 
 	// Fill in Inner Triangle
 	for (int i = 2; i < Resolution; i++)
 	{
 		for (int j = 1; j < i; j++)
 		{
-			Vertices.Add(FMath::LerpStable(Vertices[i], Vertices[Resolution + i], float(j) / float(i)));
+			MeshData.Vertices.Add(FMath::LerpStable(MeshData.Vertices[i], MeshData.Vertices[Resolution + i], float(j) / float(i)));
 		}
 	}
-
 }
 
-void ATriangleSphere::RefreshTriangles(int Resolution)
-{
-	//Reset Array
-	Triangles = TArray<int>();
-
-	//Make Rows of triangles 
-	TArray<int> TopRow = { 0 };
-	for (int i = 1; i <= Resolution; i++)
-	{
-		TArray<int> BottomRow = GetVerticeRow(i, Resolution);
-
-		for (int j = 0; j < TopRow.Num(); j++)
-		{
-			//Normal Triangles in strip
-			Triangles.Add(BottomRow[j + 1]);
-			Triangles.Add(BottomRow[j]);
-			Triangles.Add(TopRow[j]);
-
-			//Rotated Triangles
-			if (j + 1 < TopRow.Num())
-			{
-				Triangles.Add(BottomRow[j + 1]);
-				Triangles.Add(TopRow[j]);
-				Triangles.Add(TopRow[j + 1]);
-			}
-		}
-
-
-		TopRow = BottomRow;
-	}
-}
-
-void ATriangleSphere::AddBorder(int Resolution)
-{
-
-		//these are the "extended" corners connect 2 nearest a corner and the corner for a negative triangle
-		//also make strips between them for negative edge triangles
-		//use this for normal calcs
-		float test = 1.0f / Resolution;
-		float test2 = test + 1.0f;
-		
-		VerticeNum = Vertices.Num();
-		TriangleNum = Triangles.Num();
-
-		FVector Corner1 = Corners[0] - ((Corners[2] - Corners[0]) * test);
-		FVector Corner2 = Corners[1] - ((Corners[2] - Corners[1]) * test);
-		
-		int top = Vertices.Num();
-		Vertices.Add(Corner1);
-		for (int i = 1; i <= Resolution; i++)
-		{
-			Vertices.Add(FMath::LerpStable(Corner1, Corner2, float(i) / (Resolution + 1)));
-		}
-		Vertices.Add(Corner2);
-
-		for (int bot = 0; bot < Resolution; bot++)
-		{
-			
-			Triangles.Add(top + 1);
-			Triangles.Add(top);
-			Triangles.Add(bot);
-			top++;
-
-			Triangles.Add(top);
-			Triangles.Add(bot);
-			Triangles.Add(bot + 1);
-			
-		}
-
-		Triangles.Add(Resolution);
-		Triangles.Add(Vertices.Num() - 1);
-		Triangles.Add(Vertices.Num() - 2);
-
-		Corner1 = Corners[0] + ((Corners[1] - Corners[0]) * test2);
-		
-		Vertices.Add(Corner1);
-		
-		Triangles.Add(Vertices.Num() - 1);
-		Triangles.Add(Vertices.Num() - 2);
-		Triangles.Add(Resolution);
-
-
-
-		top = Vertices.Num() - 1;
-		Corner2 = Corners[0] + ((Corners[2] - Corners[0]) * test2);
-		for (int i = 1; i <= Resolution; i++)
-		{
-			Vertices.Add(FMath::LerpStable(Corner1, Corner2, float(i) / (Resolution + 1)));
-		}
-		Vertices.Add(Corner2);
-		
-		for (int bot = Resolution; bot < (3 * Resolution) - 1; bot++)
-		{
-
-			Triangles.Add(top + 1);
-			Triangles.Add(top);
-			Triangles.Add(bot);
-			top++;
-
-			Triangles.Add(top);
-			Triangles.Add(bot);
-			if (bot == Resolution)
-				bot = 2 * Resolution;
-
-			Triangles.Add(bot + 1);
-
-		}
-
-		Triangles.Add(top + 1);
-		Triangles.Add(top);
-		Triangles.Add((3 * Resolution) - 1);
-		top++;
-
-		Triangles.Add(top);
-		Triangles.Add((3 * Resolution) - 1);
-		Triangles.Add(2 * Resolution);
-
-
-		
-		Triangles.Add(top + 1);
-		Triangles.Add(top);
-		Triangles.Add(2 * Resolution);
-
-
-		Corner1 = Corners[1] + ((Corners[2] - Corners[1]) * test2);
-		Vertices.Add(Corner1);
-
-		Triangles.Add(Vertices.Num() - 1);
-		Triangles.Add(Vertices.Num() - 2);
-		Triangles.Add(2 * Resolution);
-
-		top = Vertices.Num() - 1;
-		Corner2 = Corners[0] - ((Corners[1] - Corners[0]) * test);
-		for (int i = 0; i <= Resolution; i++)
-		{
-			Vertices.Add(FMath::LerpStable(Corner1, Corner2, float(i) / (Resolution + 1)));
-		}
-		Vertices.Add(Corner2);
-
-		for (int bot = 2 * Resolution; bot > Resolution + 1; bot--)
-		{
-
-			Triangles.Add(top + 1);
-			Triangles.Add(top);
-			Triangles.Add(bot);
-			top++;
-
-			Triangles.Add(top);
-			Triangles.Add(bot);
-			Triangles.Add(bot - 1);
-
-		}
-
-		Triangles.Add(top + 1);
-		Triangles.Add(top);
-		Triangles.Add(Resolution + 1);
-		top++;
-
-		Triangles.Add(top);
-		Triangles.Add(Resolution + 1);
-		Triangles.Add(0);
-
-		Triangles.Add(top + 1);
-		Triangles.Add(top);
-		Triangles.Add(0);
-		top++;
-
-		Triangles.Add(top + 1);
-		Triangles.Add(top);
-		Triangles.Add(0);
-
-		Triangles.Add(VerticeNum);
-		Triangles.Add(top + 1);
-		Triangles.Add(0);
-
-
-}
-
+/* Given a Row and Resolution return the Indeces of all vertices in a given row */
 TArray<int> ATriangleSphere::GetVerticeRow(int RowNum, int Resolution)
 {
 	TArray<int> Row;
@@ -350,7 +110,7 @@ TArray<int> ATriangleSphere::GetVerticeRow(int RowNum, int Resolution)
 	{
 		return { 0 };
 	}
-	
+
 	//Bottom Row is an Edge
 	if (RowNum == Resolution)
 	{
@@ -370,7 +130,8 @@ TArray<int> ATriangleSphere::GetVerticeRow(int RowNum, int Resolution)
 
 	for (int i = 0; i < RowNum - 1; i++)
 	{
-		Row.Add(Resolution * 3 + GetTriangleNum(RowNum-2) + i);
+		int TriangleNum = (RowNum - 2) < 1 ? 0 : ((RowNum - 2) * ((RowNum - 2) + 1)) / 2;
+		Row.Add(Resolution * 3 + TriangleNum + i);
 	}
 
 	Row.Add(RowNum + Resolution);
@@ -378,83 +139,264 @@ TArray<int> ATriangleSphere::GetVerticeRow(int RowNum, int Resolution)
 	return Row;
 }
 
-int ATriangleSphere::GetTriangleNum(int x)
+/* Reset Triangle Array and Repopulate */
+void ATriangleSphere::RefreshTriangles(int Resolution)
 {
-	if(x < 1)
-		return 0;
+	//Reset Array
+	MeshData.Triangles = TArray<int>();
 
-	return (x * (x + 1)) / 2;
+	//Make Rows of triangles 
+	TArray<int> TopRow = { 0 };
+
+	for (int i = 1; i <= Resolution; i++)
+	{
+		TArray<int> BottomRow = GetVerticeRow(i, Resolution);
+
+		for (int j = 0; j < TopRow.Num(); j++)
+		{
+			AddTriangle(BottomRow[j + 1], BottomRow[j], TopRow[j]);
+
+			//Rotated Triangles
+			if (j + 1 < TopRow.Num())
+			{
+				AddTriangle(BottomRow[j + 1], TopRow[j], TopRow[j + 1]);
+			}
+		}
+
+
+		TopRow = BottomRow;
+	}
 }
 
-void ATriangleSphere::SetNoiseVariables()
+/* Set the final values before setting the mesh 
+* 
+*  Set Vertice Locations with Noise and Craters
+*  Calculate normal / Tangent / UV values
+* 
+*  Still Have to fix uvs so it properly blends border
+*/
+void ATriangleSphere::SetFinalMaterialValues()
 {
-	Noise->SetSeed(NoiseSeed);
-	Noise->SetFrequency(Frequency);
+
+	for (FVector& vert : MeshData.Vertices)
+	{
+		//FVector PlanarUVs = CalculateTriplanarUVs(vert);
+
+		FVector2D UVX = FVector2D(vert.Y * 0.5, vert.Z * 0.5);
+		FVector2D UVY = FVector2D(vert.X * 0.5, vert.Z * 0.5);
+		FVector2D UVZ = FVector2D(vert.X * 0.5, vert.Y * 0.5);
+
+		FVector norm = FVector(FMath::Abs(vert.X), FMath::Abs(vert.Y), FMath::Abs(vert.Z));
+		FVector Mask = FVector();
+		Mask.X = (norm.X > norm.Y && norm.X > norm.Z);
+		Mask.Y = (norm.Y > norm.X && norm.Y > norm.Z);
+		Mask.Z = (norm.Z > norm.X && norm.Z > norm.Y);
+
+		FVector2D UV = (UVX * Mask.X) + (UVY * Mask.Y) + (UVZ * Mask.Z);
+
+		MeshData.UV0.Add(UV);
+
+		FVector PlanetCenter = Corners[0].GetSafeNormal() * PlanetRadius;
+		FVector location = (vert.GetSafeNormal() * PlanetRadius);
+		/*float noiseX = Noise->GetNoise(location.X, location.Y, location.Z);
+		float noiseY = Noise->GetNoise(location.X + 52, location.Y + 13, location.Z + 7);
+		float noiseZ = Noise->GetNoise(location.X + 15, location.Y + 8, location.Z + 4);*/
+		FVector WarpedLoc = location;
+		Noise->DomainWarp(WarpedLoc.X, WarpedLoc.Y, WarpedLoc.Z);
+		float noise = Noise->GetNoise(WarpedLoc.X / 50 /*+ (noiseZ * WarpScale)*/, WarpedLoc.Y / 50/*+ (noiseY * WarpScale)*/, WarpedLoc.Z / 50/*+ (noiseZ * WarpScale)*/);
+
+		float craterheight = 0;
+		for (UCrater* Crater : Craters)
+		{
+			float offset = Crater->GetHeight(location);
+			craterheight += offset;
+		}
+
+		vert = location - PlanetCenter + (vert.GetSafeNormal() * noise * NoiseStrength) + (vert.GetSafeNormal() * craterheight);
+	}
+
+
+	UKismetProceduralMeshLibrary::CalculateTangentsForMesh(MeshData.Vertices, MeshData.Triangles, MeshData.UV0, MeshData.Normals, MeshData.Tangents); //todo uv's
+
+	MeshData.Vertices.SetNum(MeshData.VerticeNum);
+	MeshData.Triangles.SetNum(MeshData.TriangleNum);
+	MeshData.UV0.SetNum(MeshData.VerticeNum);
+	MeshData.Normals.SetNum(MeshData.VerticeNum);
+	MeshData.Tangents.SetNum(MeshData.VerticeNum);
+}
+
+/* Add a border of triangles around chunk
+*  To be used to calculate normals
+*  
+*/
+void ATriangleSphere::AddBorder(int Resolution)
+{
+
+
+		float oneTriangle = 1.0f / Resolution;
+		float SidePlusOne = oneTriangle + 1.0f;
+		
+		MeshData.VerticeNum = MeshData.Vertices.Num();
+		MeshData.TriangleNum = MeshData.Triangles.Num();
+
+		FVector Corner1 = Corners[0] - ((Corners[2] - Corners[0]) * oneTriangle);
+		FVector Corner2 = Corners[1] - ((Corners[2] - Corners[1]) * oneTriangle);
+		
+		int top = MeshData.Vertices.Num();
+		MeshData.Vertices.Add(Corner1);
+		for (int i = 1; i <= Resolution; i++)
+		{
+			MeshData.Vertices.Add(FMath::LerpStable(Corner1, Corner2, float(i) / (Resolution + 1)));
+		}
+		MeshData.Vertices.Add(Corner2);
+
+		for (int bot = 0; bot < Resolution; bot++)
+		{
+			AddTriangle(top + 1, top, bot);
+
+			top++;
+
+			AddTriangle(top, bot, bot + 1);
+		}
+
+		AddTriangle(Resolution, MeshData.Vertices.Num() - 1, MeshData.Vertices.Num() - 2);
+
+		Corner1 = Corners[0] + ((Corners[1] - Corners[0]) * SidePlusOne);
+		
+		MeshData.Vertices.Add(Corner1);
+		
+		AddTriangle(MeshData.Vertices.Num() - 1, MeshData.Vertices.Num() - 2, Resolution);
+
+		top = MeshData.Vertices.Num() - 1;
+		Corner2 = Corners[0] + ((Corners[2] - Corners[0]) * SidePlusOne);
+		for (int i = 1; i <= Resolution; i++)
+		{
+			MeshData.Vertices.Add(FMath::LerpStable(Corner1, Corner2, float(i) / (Resolution + 1)));
+		}
+		MeshData.Vertices.Add(Corner2);
+		
+		for (int bot = Resolution; bot < (3 * Resolution) - 1; bot++)
+		{
+			AddTriangle(top + 1, top, bot);
+
+			top++;
+
+			MeshData.Triangles.Add(top);
+			MeshData.Triangles.Add(bot);
+
+			if (bot == Resolution)
+				bot = 2 * Resolution;
+
+			MeshData.Triangles.Add(bot + 1);
+
+		}
+
+		AddTriangle(top + 1, top, (3 * Resolution) - 1);
+
+		top++;
+
+		AddTriangle(top, (3 * Resolution) - 1, 2 * Resolution);
+		AddTriangle(top + 1, top, 2 * Resolution);
+
+		Corner1 = Corners[1] + ((Corners[2] - Corners[1]) * SidePlusOne);
+		MeshData.Vertices.Add(Corner1);
+
+		AddTriangle(MeshData.Vertices.Num() - 1, MeshData.Vertices.Num() - 2, 2 * Resolution);
+
+		top = MeshData.Vertices.Num() - 1;
+		Corner2 = Corners[0] - ((Corners[1] - Corners[0]) * oneTriangle);
+		for (int i = 0; i <= Resolution; i++)
+		{
+			MeshData.Vertices.Add(FMath::LerpStable(Corner1, Corner2, float(i) / (Resolution + 1)));
+		}
+		MeshData.Vertices.Add(Corner2);
+
+		for (int bot = 2 * Resolution; bot > Resolution + 1; bot--)
+		{
+			AddTriangle(top + 1, top, bot);
+
+			top++;
+
+			AddTriangle(top, bot, bot - 1);
+		}
+
+		AddTriangle(top + 1, top, Resolution + 1);
+
+		top++;
+
+		AddTriangle(top, Resolution + 1, 0);
+		AddTriangle(top + 1, top, 0);
+
+		top++;
+
+		AddTriangle(top + 1, top, 0);
+		AddTriangle(MeshData.VerticeNum, top + 1, 0);
+}
+
+/* If the crater is nearby the chunk then add it to the chunk */
+void ATriangleSphere::TryAddCrater(UCrater* Crater)
+{
+	FVector Centroid = GetCentroid();
+	float centroidDist = GetDist(Corners[0], Centroid);
+	float MainDist = GetDist(Crater->CraterCenter, Centroid);
+	//UE_LOG(LogTemp, Warning, TEXT("CD: %f, MD: %f, CR: %f"), centroidDist, MainDist, Crater->CraterRadius);
+	float multiplier = 1 + Crater->RimHeight * 2; //2 for fudgibility
+	if (MainDist < (1.4 * centroidDist) + (multiplier * maxCraterRadius))//1.4 = fudgability number
+	{
+		Craters.Add(Crater);
+	}
+
+}
+
+/* Try adding each crater in an array */
+void ATriangleSphere::TryAddCraters(TArray<UCrater*> craters)
+{
+	for (int i = 0; i < craters.Num(); i++)
+	{
+		TryAddCrater(craters[i]);
+	}
+}
+
+/* Set Noise Variables */
+void ATriangleSphere::SetNoiseVariables(float Freq, int Octaves, int Seed, float Lac, float Gain, float warp)
+{
+	Noise->SetSeed(Seed);
+	Noise->SetFrequency(Freq);
 	Noise->SetNoiseType(FastNoiseLite::NoiseType_Perlin);
 	Noise->SetFractalType(FastNoiseLite::FractalType_FBm);
 	Noise->SetDomainWarpType(FastNoiseLite::DomainWarpType_OpenSimplex2);
 	Noise->SetDomainWarpAmp(WarpScale);
-	Noise->SetFractalOctaves(FractalOctaves);
-	Noise->SetFractalLacunarity(FractalLacunarity);
-	Noise->SetFractalGain(FractalGain);
-	
+	Noise->SetFractalOctaves(Octaves);
+	Noise->SetFractalLacunarity(Lac);
+	Noise->SetFractalGain(Gain);
 }
 
-FVector ATriangleSphere::CalculateTriplanarUVs(const FVector& Vertex)
-{
-	FVector PlanarUVs;
-	float ChunkSize = GetDist(Corners[0], Corners[1]);
-	PlanarUVs.X = FMath::Abs(Vertex.Y / ChunkSize); // Calculate X component based on Y coordinate
-	PlanarUVs.Y = FMath::Abs(Vertex.Z / ChunkSize); // Calculate Y component based on Z coordinate
-	PlanarUVs.Z = FMath::Abs(Vertex.X / ChunkSize); // Calculate Z component based on X coordinate
-	return PlanarUVs;
-}
-
+/* Set Material and update the mesh */
 void ATriangleSphere::SetMaterial(UMaterialInterface* Mat)
 {
-	if (Mat != Material)
-	{
 		Material = Mat;
 		Mesh->SetMaterial(0, Mat);
-	}
-	
 }
 
-void ATriangleSphere::SetNoiseValues(float Freq, int Octaves, int Seed, float Lac, float Gain, float Strength, float warp)
+
+
+/* Helper function to increase readibility */
+void ATriangleSphere::AddTriangle(int a, int b, int c)
 {
-	Frequency = Freq;
-	FractalOctaves = Octaves;
-	NoiseSeed = Seed;
-	FractalLacunarity = Lac;
-	FractalGain = Gain;
-	NoiseStrength = Strength;
-	WarpScale = warp;
-	SetNoiseVariables();
-	RefreshMoon();
+	MeshData.Triangles.Add(a);
+	MeshData.Triangles.Add(b);
+	MeshData.Triangles.Add(c);
 }
 
-#if WITH_EDITOR
-void ATriangleSphere::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
-{
-	Super::PostEditChangeProperty(PropertyChangedEvent);
-
-	if (PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(ATriangleSphere, SubDivisions))
-	{
-		RefreshMoon(); // Call CreatePlanet() whenever SubDivisions changes
-	}
-	if (PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(ATriangleSphere, Material))
-	{
-		SetMaterial(Material);
-	}
-}
-#endif
-
+/* Use Arc Cosine to Find the distance along a sphere */
 float ATriangleSphere::GetDist(FVector Point1, FVector Point2)
 {
 	FVector v1 = Point1.GetSafeNormal() * PlanetRadius;
 	FVector v2 = Point2.GetSafeNormal() * PlanetRadius;
 	return PlanetRadius * FMath::Acos(((v1.X * v2.X) + (v1.Y * v2.Y) + (v1.Z * v2.Z)) / (PlanetRadius * PlanetRadius));
 }
+
+/* Get the "center" of the chunk */
 FVector ATriangleSphere::GetCentroid()
 {
 	float X1 = (Corners[1].X + Corners[2].X + Corners[0].X) / 3;
