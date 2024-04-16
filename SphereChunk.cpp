@@ -11,7 +11,7 @@ ASphereChunk::ASphereChunk()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-
+	
 }
 
 // Called when the game starts or when spawned
@@ -51,20 +51,14 @@ void ASphereChunk::BeginPlay()
 		{
 			TArray<FVector> ChunkTriangle = ChunkTriangles[i];
 			FTransform transform = FTransform(FRotator::ZeroRotator, (ChunkTriangle[0].GetSafeNormal() * PlanetRadius) + PlanetLocation, FVector::OneVector);
-			ATriangleSphere* Chunk = GetWorld()->SpawnActorDeferred<ATriangleSphere>(ATriangleSphere::StaticClass(), transform, GetOwner());
+			ATriangleSphere* Chunk = GetWorld()->SpawnActorDeferred<ATriangleSphere>(ATriangleSphere::StaticClass(), transform, this);
 			Chunk->Corners = ChunkTriangle;
 			Chunk->SubDivisions = ChunkSubDivisions;
 			Chunk->Material = Material;
 			Chunk->PlanetRadius = PlanetRadius;
-			Chunk->NoiseSeed = NoiseSeed;
-			Chunk->Frequency = Frequency;
-			Chunk->FractalOctaves = FractalOctaves;
-			Chunk->FractalLacunarity = FractalLacunarity;
-			Chunk->FractalGain = FractalGain;
+			Chunk->SetNoiseVariables(Frequency, FractalOctaves, NoiseSeed, FractalLacunarity, FractalGain, warpScale);
 			Chunk->NoiseStrength = NoiseStrength;
 			Chunk->maxCraterRadius = (PlanetRadius / 4);
-			if (i == 0)
-				Chunk->debug = true;
 			Chunk->TryAddCraters(Craters);
 			Chunk->FinishSpawning(transform);
 			Chunks.Add(Chunk);
@@ -140,7 +134,8 @@ void ASphereChunk::PostEditChangeProperty(FPropertyChangedEvent& PropertyChanged
 	{
 		for (ATriangleSphere* Chunk : Chunks)
 		{
-			Chunk->SetNoiseValues(Frequency, FractalOctaves, NoiseSeed, FractalLacunarity, FractalGain, NoiseStrength, warpScale);
+			Chunk->SetNoiseVariables(Frequency, FractalOctaves, NoiseSeed, FractalLacunarity, FractalGain, warpScale);
+			Chunk->RefreshMoon();
 		}
 	}
 

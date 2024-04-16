@@ -3,12 +3,36 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "ProceduralMeshComponent.h"
+#include "FastNoiseLite.h"
+#include "Crater.h"
+#include "KismetProceduralMeshLibrary.h"
 #include "GameFramework/Actor.h"
 #include "TriangleSphere.generated.h"
 
-class UProceduralMeshComponent;
-class FastNoiseLite;
-class UCrater;
+USTRUCT()
+struct FChunkMeshData
+{
+	GENERATED_BODY();
+
+public:
+	TArray<FVector> Vertices;
+	TArray<int> Triangles;
+	TArray<FVector> Normals;
+	TArray<FVector2D> UV0;
+	TArray<FColor> Colors;
+	TArray<FProcMeshTangent> Tangents;
+
+	/*TODO make this
+	* Put Border stuff in here
+	* Calc UV's and such with Vertices + BorderVertices
+	* Will remove TriangleNum and the weird setNum
+	TArray<FVector> BorderVertices;
+	TArray<int> BorderTriangles;*/
+
+	int TriangleNum;
+	int VerticeNum;
+};
 
 UCLASS()
 class MOONS_API ATriangleSphere : public AActor
@@ -19,44 +43,35 @@ public:
 	// Sets default values for this actor's properties
 	ATriangleSphere();
 
+	//input variables
 	UPROPERTY(EditAnywhere, Category = "Moon")
 	TObjectPtr<UMaterialInterface> Material;
 
 	UPROPERTY(EditAnywhere, Category = "Moon")
 	int SubDivisions = 2;
 
-	TArray<FVector> Corners;
-
 	float PlanetRadius;
-
-	void SetMaterial(UMaterialInterface* Mat);
-	void SetNoiseValues(float Freq, int Octaves, int Seed, float Lac, float Gain, float Strength, float warp);
-
-	float Frequency = 0.01f;
-	int FractalOctaves = 3;
-	int NoiseSeed;
-	float FractalLacunarity = 2.0f;
-	float FractalGain = 0.5f;
-	float NoiseStrength = 2000.0f;
-
 	float WarpScale = 80;
-	float debug = false;
 	float maxCraterRadius = 1000.0f;
-
-	UPROPERTY()
-	TArray<UCrater*> Craters;
-
+	float NoiseStrength = 2000.0f;
+	
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-	void RefreshMoon();
 
+	TArray<FVector> Corners;
+
+	UPROPERTY()
+	TArray<UCrater*> Craters;
 	void TryAddCrater(UCrater* Crater);
 	void TryAddCraters(TArray<UCrater*> craters);
+
+	void SetMaterial(UMaterialInterface* Mat);
+	void SetNoiseVariables(float Freq, int Octaves, int Seed, float Lac, float Gain, float warp);
+
+	void RefreshMoon();
 	
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
@@ -64,24 +79,22 @@ public:
 
 private:
 
+	FChunkMeshData MeshData;
+	TObjectPtr<UProceduralMeshComponent> Mesh;
+	
+	FastNoiseLite* Noise;
+	
+	void AddBorder(int Resolution);
+	void SetFinalMaterialValues();
+
+	void RefreshVertices(int Resolution);
+	TArray<int> GetVerticeRow(int RowNum, int Resolution);
+
+	void RefreshTriangles(int Resolution);
+	void AddTriangle(int a, int b, int c);
+	
+
 	float GetDist(FVector Point1, FVector Point2);
 	FVector GetCentroid();
 
-	int VerticeNum;
-	int TriangleNum;
-
-	TObjectPtr<UProceduralMeshComponent> Mesh;
-	
-	TArray<FVector> Vertices;
-	TArray<int> Triangles;
-	FastNoiseLite* Noise;
-	
-	void RefreshVertices(int Resolution);
-	void RefreshTriangles(int Resolution);
-	void AddBorder(int Resolution);
-	TArray<int> GetVerticeRow(int RowNum, int Resolution);
-	int GetTriangleNum(int x);
-	void SetNoiseVariables();
-	
-	FVector CalculateTriplanarUVs(const FVector& Vertex);
 };
