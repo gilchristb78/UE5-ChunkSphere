@@ -19,8 +19,7 @@ How it Works:
 
 1. Add 3 Rows of Vertices Connecting the 3 Corners.
 
-<!--![Chunk Edges Highlighted](https://github.com/gilchristb78/UE5-ChunkSphere/blob/main/MoonCapture/TriangleEdges.png)-->
-<img src="[https://your-image-url.type](https://github.com/gilchristb78/UE5-ChunkSphere/blob/main/MoonCapture/TriangleEdges.png)" width="1000">
+![Chunk Edges Highlighted](https://github.com/gilchristb78/UE5-ChunkSphere/blob/main/MoonCapture/TriangleEdges.png)
 <br><br>
 ![Chunk Array with Edges](https://github.com/gilchristb78/UE5-ChunkSphere/blob/main/MoonCapture/ArrayEdges.png)
 
@@ -35,3 +34,9 @@ How it Works:
 ![Chunk Inner Points Heighlighted](https://github.com/gilchristb78/UE5-ChunkSphere/blob/main/MoonCapture/TriangleInner.png)
 ![Chunk Array With Inner Points](https://github.com/gilchristb78/UE5-ChunkSphere/blob/main/MoonCapture/ArrayAll.png)
 <!-- Same Triangle Again with inside -->
+
+This function leaves us with an array of verticies with unique properties.<br> 
+- Firstly we know the corners appear at index [0], [Resolution], and [2Resolution].<br>
+- Next we know the edges appear at indeces (0 -> Resolution), (Resolution -> 2Resolution), and (2Resolution -> 3Resolution) exclusively.<br>
+- Finally all inner vertices fall within a row with the first vertice in that row having index [3Resolution + △] 
+> with △ equal to the triangle number for that row (inner rows △ = 0,1,3,6...).
