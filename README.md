@@ -16,23 +16,29 @@ In this function the chunk is "refreshed" causing all points and triangles to be
 This function will create the vertice array that contains all points for the mesh to render.
 <br><br>
 How it Works:
-
+![How the Sausage is Made](https://github.com/gilchristb78/UE5-ChunkSphere/blob/main/MoonCapture/TrianglesAndArrays.png)
 1. Add 3 Rows of Vertices Connecting the 3 Corners.
 
+<!--
 ![Chunk Edges Highlighted](https://github.com/gilchristb78/UE5-ChunkSphere/blob/main/MoonCapture/TriangleEdges.png)
 <br><br>
 ![Chunk Array with Edges](https://github.com/gilchristb78/UE5-ChunkSphere/blob/main/MoonCapture/ArrayEdges.png)
+-->
 
 2. Add the Corners in the correct locations.
 
+<!--
 ![Chunk Corners Highlighted](https://github.com/gilchristb78/UE5-ChunkSphere/blob/main/MoonCapture/TriangleCorners.png)
 <br><br>
 ![Chunk Array with Corners](https://github.com/gilchristb78/UE5-ChunkSphere/blob/main/MoonCapture/ArrayCorners.png)
+-->
 
 3. Fill in the Inner Vertices
 
+<!--
 ![Chunk Inner Points Heighlighted](https://github.com/gilchristb78/UE5-ChunkSphere/blob/main/MoonCapture/TriangleInner.png)
 ![Chunk Array With Inner Points](https://github.com/gilchristb78/UE5-ChunkSphere/blob/main/MoonCapture/ArrayAll.png)
+-->
 <!-- Same Triangle Again with inside -->
 
 This function leaves us with an array of verticies with unique properties.<br> 
