@@ -17,17 +17,21 @@ This function will create the vertice array that contains all points for the mes
 <br><br>
 How it Works:
 
-1. Add 3 Rows of Vertices Connecting the 3 Corners. *Corners are not added yet.*
+1. Add 3 Rows of Vertices Connecting the 3 Corners.
 
-<!-- Add imade of triangle with lines between corners colors 3 colors, leave significant gap at corners -->
-<!-- then add image of array of boxes : [E][D][G][E][E][D][G][E][E][D][G][E] with each edge being a different color -->
-
+<!--![Chunk Edges Highlighted](https://github.com/gilchristb78/UE5-ChunkSphere/blob/main/MoonCapture/TriangleEdges.png)-->
+<img src="[https://your-image-url.type](https://github.com/gilchristb78/UE5-ChunkSphere/blob/main/MoonCapture/TriangleEdges.png)" width="1000">
+<br><br>
+![Chunk Array with Edges](https://github.com/gilchristb78/UE5-ChunkSphere/blob/main/MoonCapture/ArrayEdges.png)
 
 2. Add the Corners in the correct locations.
 
-<!-- Show same triangle image with filled in circle covering corners with 3 new colors -->
-<!-- Same Array of Boxes with C's : [C][E][D][G][E][C][E][D][G][E][C][E][D][G][E] with each C being different color -->
+![Chunk Corners Highlighted](https://github.com/gilchristb78/UE5-ChunkSphere/blob/main/MoonCapture/TriangleCorners.png)
+<br><br>
+![Chunk Array with Corners](https://github.com/gilchristb78/UE5-ChunkSphere/blob/main/MoonCapture/ArrayCorners.png)
 
 3. Fill in the Inner Vertices
 
+![Chunk Inner Points Heighlighted](https://github.com/gilchristb78/UE5-ChunkSphere/blob/main/MoonCapture/TriangleInner.png)
+![Chunk Array With Inner Points](https://github.com/gilchristb78/UE5-ChunkSphere/blob/main/MoonCapture/ArrayAll.png)
 <!-- Same Triangle Again with inside -->
