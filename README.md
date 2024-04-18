@@ -18,31 +18,12 @@ This function will create the vertice array that contains all points for the mes
 How it Works:
 ![How the Sausage is Made](https://github.com/gilchristb78/UE5-ChunkSphere/blob/main/MoonCapture/TrianglesAndArrays.png)
 1. Add 3 Rows of Vertices Connecting the 3 Corners.
-
-<!--
-![Chunk Edges Highlighted](https://github.com/gilchristb78/UE5-ChunkSphere/blob/main/MoonCapture/TriangleEdges.png)
-<br><br>
-![Chunk Array with Edges](https://github.com/gilchristb78/UE5-ChunkSphere/blob/main/MoonCapture/ArrayEdges.png)
--->
-
 2. Add the Corners in the correct locations.
-
-<!--
-![Chunk Corners Highlighted](https://github.com/gilchristb78/UE5-ChunkSphere/blob/main/MoonCapture/TriangleCorners.png)
-<br><br>
-![Chunk Array with Corners](https://github.com/gilchristb78/UE5-ChunkSphere/blob/main/MoonCapture/ArrayCorners.png)
--->
-
 3. Fill in the Inner Vertices
-
-<!--
-![Chunk Inner Points Heighlighted](https://github.com/gilchristb78/UE5-ChunkSphere/blob/main/MoonCapture/TriangleInner.png)
-![Chunk Array With Inner Points](https://github.com/gilchristb78/UE5-ChunkSphere/blob/main/MoonCapture/ArrayAll.png)
--->
-<!-- Same Triangle Again with inside -->
 
 This function leaves us with an array of verticies with unique properties.<br> 
 - Firstly we know the corners appear at index [0], [Resolution], and [2Resolution].<br>
 - Next we know the edges appear at indeces (0 -> Resolution), (Resolution -> 2Resolution), and (2Resolution -> 3Resolution) exclusively.<br>
-- Finally all inner vertices fall within a row with the first vertice in that row having index [3Resolution + △] 
-> with △ equal to the triangle number for that row (inner rows △ = 0,1,3,6...).
+- Finally all inner vertices fall within a row with the first vertice in that row having index [3Resolution + △]
+
+     > with △ equal to the triangle number for that row (inner rows △ = 0,1,3,6...).
