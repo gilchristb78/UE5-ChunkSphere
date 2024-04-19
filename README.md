@@ -27,3 +27,19 @@ This function leaves us with an array of verticies with unique properties.<br>
 - Finally all inner vertices fall within a row with the first vertice in that row having index [3Resolution + △]
 
      > with △ equal to the triangle number for that row (inner rows △ = 0,1,3,6...).
+
+### Get Vertice Row
+This function will return an array of indices that correspond to vertices forming a row within the triangle. If the row number is less than 1 (ie. 0) then just return corner 0. If the row number is equal to resolution then return the edge between corners 1 and 2. Finally if we want a row in the middle then we add the point on edge 0, then loop through the inner points with our triangle math △, finaly we add the point on edge 1.
+
+### Refresh Triangles
+This function will create the triangle array that contains all triangles for the mesh to render. 
+<br><br>
+How it Works: <br>
+![Triangle animation](https://github.com/gilchristb78/UE5-ChunkSphere/blob/main/MoonCapture/TrianglesLoop.gif)
+
+1. Get a row of vertices utilizing GetVerticeRow()
+2. Get a row of vertices one below that row
+3. Loop left to right along the top row
+     -  Add a Triangle
+     -  If we are not at the end of our row, add an "upside down" triangle
+4. Continue looping through rows until our bottom row corresponds with the bottom edge 
