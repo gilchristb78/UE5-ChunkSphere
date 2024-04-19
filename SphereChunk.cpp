@@ -4,6 +4,7 @@
 #include "SphereChunk.h"
 #include "TriangleSphere.h"
 #include "Crater.h"
+#include "thread"
 #include "Kismet/GameplayStatics.h"
 
 // Sets default values
@@ -59,6 +60,10 @@ void ASphereChunk::BeginPlay()
 			Chunk->SetNoiseVariables(Frequency, FractalOctaves, NoiseSeed, FractalLacunarity, FractalGain, warpScale);
 			Chunk->NoiseStrength = NoiseStrength;
 			Chunk->maxCraterRadius = (PlanetRadius / 4);
+			if (i % 100 == 0)
+			{
+				Chunk->debug = true;
+			}
 			Chunk->TryAddCraters(Craters);
 			Chunk->FinishSpawning(transform);
 			Chunks.Add(Chunk);
@@ -451,43 +456,34 @@ int ASphereChunk::GetCol(int index)
 
 void ASphereChunk::SetHalf(int row, int col)
 {
-	for (ATriangleSphere* Chunk : HalfPlanetChunks)
+
+	for (ATriangleSphere* Chunk : Chunks)
 	{
-		Chunk->SetMaterial(Material);
+		float MaxDist = (PI * PlanetRadius);
+		float dist = PlanetDist(getCentroid(ChunkRows[row][col]), getCentroid(Chunk));
+		//if (dist >= MaxDist / 2)
+		//{
+		//	Chunk->SetRendered(false);	//0,5,3,2,2
+		//}
+		//else if (dist < MaxDist / 10)
+		//{
+		//	Chunk->SetRendered(true, 5);
+		//}
+		//else if (dist < MaxDist / 5)
+		//{
+		//	Chunk->SetRendered(true, 2);
+		//}
+		//else if (dist < MaxDist / 3)
+		//{
+		//	Chunk->SetRendered(true, 1);
+		//}
+		//else
+		//{
+		//	Chunk->SetRendered(true, 0);
+		//}
 	}
-	HalfPlanetChunks = TArray<ATriangleSphere*>();
 
-	ATriangleSphere* MiddleChunk = ChunkRows[row][col];
-
-	for(TArray<ATriangleSphere*> Row : ChunkRows)
-	{
-		for (ATriangleSphere* Chunk : Row)
-		{
-			float MaxDist = (PI * PlanetRadius);
-			float dist = PlanetDist(getCentroid(ChunkRows[row][col]), getCentroid(Chunk));
-			if (dist < MaxDist / 2)
-			{
-				Chunk->SetMaterial(Material4);
-				HalfPlanetChunks.Add(Chunk);
-			}
-
-			if (dist < MaxDist / 3)
-			{
-				Chunk->SetMaterial(Material3);
-			}
-
-			if (dist < MaxDist / 5)
-			{
-				Chunk->SetMaterial(Material5);
-			}
-
-			if (dist < MaxDist / 10)
-			{
-				Chunk->SetMaterial(Material2);
-			}
-		}
-
-	}
+	
 
 }
 
