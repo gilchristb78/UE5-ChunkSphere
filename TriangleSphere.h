@@ -20,6 +20,9 @@ public:
 	TArray<int> Triangles;
 	TArray<FVector> Normals;
 	TArray<FVector2D> UV0;
+	TArray<FVector2D> UVX;
+	TArray<FVector2D> UVY;
+	TArray<FVector2D> UVZ;
 	TArray<FColor> Colors;
 	TArray<FProcMeshTangent> Tangents;
 
@@ -61,6 +64,8 @@ protected:
 
 public:	
 
+	bool debug = false;
+
 	TArray<FVector> Corners;
 
 	UPROPERTY()
@@ -72,6 +77,9 @@ public:
 	void SetNoiseVariables(float Freq, int Octaves, int Seed, float Lac, float Gain, float warp);
 
 	void RefreshMoon();
+
+
+	void SetRendered(bool brender, int subdiv = 0);
 	
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
@@ -93,6 +101,7 @@ private:
 	void RefreshTriangles(int Resolution);
 	void AddTriangle(int a, int b, int c);
 	
+	bool Rendered = true;
 
 	float GetDist(FVector Point1, FVector Point2);
 	FVector GetCentroid();

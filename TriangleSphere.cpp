@@ -22,15 +22,11 @@ void ATriangleSphere::BeginPlay()
 {
 	Super::BeginPlay();
 
-	
-
 	if (MeshData.Vertices.IsEmpty()) //Only Set Variables and refresh moon if we havent done it yet.
 	{
 		RefreshMoon();
 	}
 		
-	
-	
 }
 
 /* If Values Are Changed within the editor, update the appropriate values */
@@ -54,15 +50,18 @@ void ATriangleSphere::PostEditChangeProperty(FPropertyChangedEvent& PropertyChan
 void ATriangleSphere::RefreshMoon()
 {
 	int Resolution = 1 << SubDivisions;
-	
-	RefreshVertices(Resolution);
-	RefreshTriangles(Resolution);
-	
-	AddBorder(Resolution);
-	SetFinalMaterialValues();
+
+	if (Rendered)
+	{
+
+		RefreshVertices(Resolution);
+		RefreshTriangles(Resolution);
+		AddBorder(Resolution);
+		SetFinalMaterialValues();
+	}
 
 	Mesh->SetMaterial(0, Material);
-	Mesh->CreateMeshSection(0, MeshData.Vertices, MeshData.Triangles, MeshData.Normals, MeshData.UV0, TArray<FColor>(), MeshData.Tangents, true);
+	Mesh->CreateMeshSection(0, MeshData.Vertices, MeshData.Triangles, MeshData.Normals, MeshData.UV0, MeshData.UVX, MeshData.UVY, MeshData.UVZ, TArray<FColor>(), MeshData.Tangents, true);
 
 }
 
@@ -128,9 +127,9 @@ TArray<int> ATriangleSphere::GetVerticeRow(int RowNum, int Resolution)
 	//Rest need triangle math
 	Row.Add(RowNum);
 
+	int TriangleNum = (RowNum - 2) < 1 ? 0 : ((RowNum - 2) * ((RowNum - 2) + 1)) / 2;
 	for (int i = 0; i < RowNum - 1; i++)
-	{
-		int TriangleNum = (RowNum - 2) < 1 ? 0 : ((RowNum - 2) * ((RowNum - 2) + 1)) / 2;
+	{	
 		Row.Add(Resolution * 3 + TriangleNum + i);
 	}
 
@@ -173,18 +172,19 @@ void ATriangleSphere::RefreshTriangles(int Resolution)
 *  Set Vertice Locations with Noise and Craters
 *  Calculate normal / Tangent / UV values
 * 
-*  Still Have to fix uvs so it properly blends border
+*  Still Have to fix triplanar so it properly blends border
 */
 void ATriangleSphere::SetFinalMaterialValues()
 {
-
+	MeshData.UV0.Empty();
+	MeshData.Normals.Empty();
+	MeshData.Tangents.Empty();
 	for (FVector& vert : MeshData.Vertices)
 	{
 		//FVector PlanarUVs = CalculateTriplanarUVs(vert);
-
-		FVector2D UVX = FVector2D(vert.Y * 0.5, vert.Z * 0.5);
-		FVector2D UVY = FVector2D(vert.X * 0.5, vert.Z * 0.5);
-		FVector2D UVZ = FVector2D(vert.X * 0.5, vert.Y * 0.5);
+		FVector2D UVX = FVector2D(vert.Y * 4, vert.Z * 4);
+		FVector2D UVY = FVector2D(vert.X * 4, vert.Z * 4);
+		FVector2D UVZ = FVector2D(vert.X * 4, vert.Y * 4);
 
 		FVector norm = FVector(FMath::Abs(vert.X), FMath::Abs(vert.Y), FMath::Abs(vert.Z));
 		FVector Mask = FVector();
@@ -195,6 +195,11 @@ void ATriangleSphere::SetFinalMaterialValues()
 		FVector2D UV = (UVX * Mask.X) + (UVY * Mask.Y) + (UVZ * Mask.Z);
 
 		MeshData.UV0.Add(UV);
+
+		MeshData.UVX.Add(UVX);
+		MeshData.UVY.Add(UVY);
+		MeshData.UVZ.Add(UVZ);
+		
 
 		FVector PlanetCenter = Corners[0].GetSafeNormal() * PlanetRadius;
 		FVector location = (vert.GetSafeNormal() * PlanetRadius);
@@ -213,16 +218,24 @@ void ATriangleSphere::SetFinalMaterialValues()
 		}
 
 		vert = location - PlanetCenter + (vert.GetSafeNormal() * noise * NoiseStrength) + (vert.GetSafeNormal() * craterheight);
+		
+		
 	}
 
-
+	//takes the most time
 	UKismetProceduralMeshLibrary::CalculateTangentsForMesh(MeshData.Vertices, MeshData.Triangles, MeshData.UV0, MeshData.Normals, MeshData.Tangents); //todo uv's
-
+	
 	MeshData.Vertices.SetNum(MeshData.VerticeNum);
 	MeshData.Triangles.SetNum(MeshData.TriangleNum);
 	MeshData.UV0.SetNum(MeshData.VerticeNum);
+	MeshData.UVX.SetNum(MeshData.VerticeNum);
+	MeshData.UVY.SetNum(MeshData.VerticeNum);
+	MeshData.UVZ.SetNum(MeshData.VerticeNum);
 	MeshData.Normals.SetNum(MeshData.VerticeNum);
 	MeshData.Tangents.SetNum(MeshData.VerticeNum);
+
+
+
 }
 
 /* Add a border of triangles around chunk
@@ -386,6 +399,29 @@ void ATriangleSphere::AddTriangle(int a, int b, int c)
 	MeshData.Triangles.Add(a);
 	MeshData.Triangles.Add(b);
 	MeshData.Triangles.Add(c);
+}
+
+void ATriangleSphere::SetRendered(bool brender, int subdiv)
+{
+
+	Rendered = brender;
+	if (brender)
+	{
+		if (subdiv != SubDivisions)
+		{
+			SubDivisions = subdiv;
+			RefreshMoon();
+		}
+		else
+		{
+			Mesh->CreateMeshSection(0, MeshData.Vertices, MeshData.Triangles, MeshData.Normals, MeshData.UV0, TArray<FColor>(), MeshData.Tangents, true);
+		}
+	}
+	else
+	{
+		Mesh->CreateMeshSection(0, TArray<FVector>(), TArray<int>(), TArray<FVector>(), TArray<FVector2d>(), TArray<FColor>(), TArray<FProcMeshTangent>(), false);
+	}
+
 }
 
 /* Use Arc Cosine to Find the distance along a sphere */
