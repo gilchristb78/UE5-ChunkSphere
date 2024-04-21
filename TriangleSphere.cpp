@@ -177,14 +177,17 @@ void ATriangleSphere::RefreshTriangles(int Resolution)
 void ATriangleSphere::SetFinalMaterialValues()
 {
 	MeshData.UV0.Empty();
+	MeshData.UVX.Empty();
+	MeshData.UVY.Empty();
+	MeshData.UVZ.Empty();
 	MeshData.Normals.Empty();
 	MeshData.Tangents.Empty();
 	for (FVector& vert : MeshData.Vertices)
 	{
 		//FVector PlanarUVs = CalculateTriplanarUVs(vert);
-		FVector2D UVX = FVector2D(vert.Y * 4, vert.Z * 4);
-		FVector2D UVY = FVector2D(vert.X * 4, vert.Z * 4);
-		FVector2D UVZ = FVector2D(vert.X * 4, vert.Y * 4);
+		FVector2D UVX = FVector2D(vert.Y , vert.Z );
+		FVector2D UVY = FVector2D(vert.X , vert.Z );
+		FVector2D UVZ = FVector2D(vert.X , vert.Y );
 
 		FVector norm = FVector(FMath::Abs(vert.X), FMath::Abs(vert.Y), FMath::Abs(vert.Z));
 		FVector Mask = FVector();
@@ -222,8 +225,16 @@ void ATriangleSphere::SetFinalMaterialValues()
 		
 	}
 
+	double s = FPlatformTime::Seconds();
+	SetNormalsForMesh(MeshData.Vertices, MeshData.Triangles, MeshData.Normals);
+	double e = FPlatformTime::Seconds();
+
+	if (debug)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Time: %f"), e - s);
+	}
 	//takes the most time
-	UKismetProceduralMeshLibrary::CalculateTangentsForMesh(MeshData.Vertices, MeshData.Triangles, MeshData.UV0, MeshData.Normals, MeshData.Tangents); //todo uv's
+	//UKismetProceduralMeshLibrary::CalculateTangentsForMesh(MeshData.Vertices, MeshData.Triangles, MeshData.UV0, MeshData.Normals, MeshData.Tangents); //todo uv's
 	
 	MeshData.Vertices.SetNum(MeshData.VerticeNum);
 	MeshData.Triangles.SetNum(MeshData.TriangleNum);
@@ -235,6 +246,29 @@ void ATriangleSphere::SetFinalMaterialValues()
 	MeshData.Tangents.SetNum(MeshData.VerticeNum);
 
 
+}
+
+void ATriangleSphere::SetNormalsForMesh(const TArray<FVector>& Vertices, const TArray<int>& Triangles, TArray<FVector>& Normals)
+{
+	TArray<int> counts;
+	counts.SetNum(Vertices.Num());
+
+	Normals.Empty();
+	Normals.SetNum(Vertices.Num());
+
+	for (int i = 0; i < Triangles.Num() - 2; i += 3)
+	{
+		int c = Triangles[i];
+		int b = Triangles[i + 1];
+		int a = Triangles[i + 2];
+		FVector normal = FVector::CrossProduct(Vertices[b] - Vertices[a], Vertices[c] - Vertices[a]).GetSafeNormal();
+		counts[a] == 0 ? Normals[a] = normal : Normals[a] = ((Normals[a] * counts[a]) + normal) / (counts[a] + 1);
+		counts[b] == 0 ? Normals[b] = normal : Normals[b] = ((Normals[b] * counts[b]) + normal) / (counts[b] + 1);
+		counts[c] == 0 ? Normals[c] = normal : Normals[c] = ((Normals[c] * counts[c]) + normal) / (counts[c] + 1);
+		counts[a]++;
+		counts[b]++;
+		counts[c]++;
+	}
 }
 
 /* Add a border of triangles around chunk

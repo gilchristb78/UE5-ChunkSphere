@@ -94,6 +94,7 @@ private:
 	
 	void AddBorder(int Resolution);
 	void SetFinalMaterialValues();
+	void SetNormalsForMesh(const TArray<FVector>& Vertices, const TArray<int>& Triangles, TArray<FVector>& Normals);
 
 	void RefreshVertices(int Resolution);
 	TArray<int> GetVerticeRow(int RowNum, int Resolution);
