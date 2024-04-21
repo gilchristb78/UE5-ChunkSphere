@@ -51,3 +51,11 @@ This function will prepare the data before it is applies to the mesh. This will 
 - Update the vertices to have correct positionings relative to the actor location (corner[0]), Some amount of noise, and craters.
 - calculate normals and tangents <br>*****note this is too slow and should be redone***
 - Remove all values that reference the fake border used for normal mapping
+
+### Add Border
+This function will add additional vertices and triangles around the outside of the chunk. <br>
+Because vertice normals are calculated by looking at all triangles connected to a vertice the edge of chunks can have unexpected values due to the lack of triangles. <br>
+To accomidate this we wrap the chunk with a row of triangles and vertices that we can calculate normals with then throw away. <br>
+A few things make this possible: <br> 
+Firstly craters have a bit of fudgibility ensuring that even just outside our trunk we can ensure we know where they are.<br>
+Secondly we can guestimate where our outside triangles will appear and aslong as they are mostly correct, the normals will be very close to accurate removing pesky lighting errors at the edge of trunks.
