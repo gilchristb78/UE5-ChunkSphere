@@ -60,7 +60,7 @@ void ASphereChunk::BeginPlay()
 			Chunk->SetNoiseVariables(Frequency, FractalOctaves, NoiseSeed, FractalLacunarity, FractalGain, warpScale);
 			Chunk->NoiseStrength = NoiseStrength;
 			Chunk->maxCraterRadius = (PlanetRadius / 4);
-			if (i % 100 == 0)
+			if (i % 1000 == 0)
 			{
 				Chunk->debug = true;
 			}
@@ -461,26 +461,26 @@ void ASphereChunk::SetHalf(int row, int col)
 	{
 		float MaxDist = (PI * PlanetRadius);
 		float dist = PlanetDist(getCentroid(ChunkRows[row][col]), getCentroid(Chunk));
-		//if (dist >= MaxDist / 2)
-		//{
-		//	Chunk->SetRendered(false);	//0,5,3,2,2
-		//}
-		//else if (dist < MaxDist / 10)
-		//{
-		//	Chunk->SetRendered(true, 5);
-		//}
-		//else if (dist < MaxDist / 5)
-		//{
-		//	Chunk->SetRendered(true, 2);
-		//}
-		//else if (dist < MaxDist / 3)
-		//{
-		//	Chunk->SetRendered(true, 1);
-		//}
-		//else
-		//{
-		//	Chunk->SetRendered(true, 0);
-		//}
+		if (dist >= MaxDist / 2)
+		{
+			Chunk->SetRendered(false);	//0,5,3,2,2
+		}
+		else if (dist < MaxDist / 10)
+		{
+			Chunk->SetRendered(true, 4);
+		}
+		else if (dist < MaxDist / 5)
+		{
+			Chunk->SetRendered(true, 3);
+		}
+		else if (dist < MaxDist / 3)
+		{
+			Chunk->SetRendered(true, 2);
+		}
+		else
+		{
+			Chunk->SetRendered(true, 1);
+		}
 	}
 
 	
