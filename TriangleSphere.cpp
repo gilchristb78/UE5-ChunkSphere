@@ -206,9 +206,9 @@ void ATriangleSphere::SetFinalMaterialValues()
 		/*float noiseX = Noise->GetNoise(location.X, location.Y, location.Z);
 		float noiseY = Noise->GetNoise(location.X + 52, location.Y + 13, location.Z + 7);
 		float noiseZ = Noise->GetNoise(location.X + 15, location.Y + 8, location.Z + 4);*/
-		FVector WarpedLoc = location;
+		FVector WarpedLoc = location / (PlanetRadius / 100);
 		Noise->DomainWarp(WarpedLoc.X, WarpedLoc.Y, WarpedLoc.Z);
-		float noise = Noise->GetNoise(WarpedLoc.X / 50 /*+ (noiseZ * WarpScale)*/, WarpedLoc.Y / 50/*+ (noiseY * WarpScale)*/, WarpedLoc.Z / 50/*+ (noiseZ * WarpScale)*/);
+		float noise = Noise->GetNoise(WarpedLoc.X /*+ (noiseZ * WarpScale)*/, WarpedLoc.Y/*+ (noiseY * WarpScale)*/, WarpedLoc.Z/*+ (noiseZ * WarpScale)*/);
 
 		float craterheight = 0;
 		for (UCrater* Crater : Craters)
@@ -233,7 +233,6 @@ void ATriangleSphere::SetFinalMaterialValues()
 	MeshData.UVZ.SetNum(MeshData.VerticeNum);
 	MeshData.Normals.SetNum(MeshData.VerticeNum);
 	MeshData.Tangents.SetNum(MeshData.VerticeNum);
-
 
 
 }
@@ -414,12 +413,12 @@ void ATriangleSphere::SetRendered(bool brender, int subdiv)
 		}
 		else
 		{
-			Mesh->CreateMeshSection(0, MeshData.Vertices, MeshData.Triangles, MeshData.Normals, MeshData.UV0, TArray<FColor>(), MeshData.Tangents, true);
+			Mesh->CreateMeshSection(0, MeshData.Vertices, MeshData.Triangles, MeshData.Normals, MeshData.UV0, MeshData.UVX, MeshData.UVY, MeshData.UVZ, TArray<FColor>(), MeshData.Tangents, true);
 		}
 	}
 	else
 	{
-		Mesh->CreateMeshSection(0, TArray<FVector>(), TArray<int>(), TArray<FVector>(), TArray<FVector2d>(), TArray<FColor>(), TArray<FProcMeshTangent>(), false);
+		Mesh->CreateMeshSection(0, TArray<FVector>(), TArray<int>(), TArray<FVector>(), TArray<FVector2d>(), TArray<FVector2d>(), TArray<FVector2d>(), TArray<FVector2d>(), TArray<FColor>(), TArray<FProcMeshTangent>(), false);
 	}
 
 }
