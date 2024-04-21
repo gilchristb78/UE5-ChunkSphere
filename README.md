@@ -65,5 +65,5 @@ Secondly we can guestimate where our outside triangles will appear and aslong as
 This Function will add a crater or multiple craters if they fall within the chunk (roughly). <br>
 Check the distance between the centroid of the chunk and a corner, giving a rough size to the chunk, multiplying this by 1.4 to add some error correction. <br>
 Check the distance between the center of the crater and the centroid. <br>
-Check how wide the crater can effect vertices (1 + rimheight) * 2 for fudgibility, times the max crater radius incase we change the size ******in full game change this with craterradius as they will not change size*** <br>
+Check how wide the crater can effect vertices (1 + rimheight) * 2 for fudgibility, times the max crater radius incase we change the size <br>******in full game change this with craterradius as they will not change size*** <br>
 If the distances check out, we can ensure our crater is atleast near our chunk.
