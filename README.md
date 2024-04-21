@@ -42,4 +42,12 @@ How it Works: <br>
 3. Loop left to right along the top row
      -  Add a Triangle
      -  If we are not at the end of our row, add an "upside down" triangle
-4. Continue looping through rows until our bottom row corresponds with the bottom edge 
+4. Continue looping through rows until our bottom row corresponds with the bottom edge
+
+### Set Final Material Values
+
+This function will prepare the data before it is applies to the mesh. This will consist of a few operations:
+- Calculate UV's by taking the position of the normal vertices in the 3 axis. this can then be used in a blueprint for triplanar mapping.
+- Update the vertices to have correct positionings relative to the actor location (corner[0]), Some amount of noise, and craters.
+- calculate normals and tangents <br>*****note this is too slow and should be redone***
+- Remove all values that reference the fake border used for normal mapping
