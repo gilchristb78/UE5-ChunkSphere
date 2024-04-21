@@ -59,3 +59,11 @@ To accomidate this we wrap the chunk with a row of triangles and vertices that w
 A few things make this possible: <br> 
 Firstly craters have a bit of fudgibility ensuring that even just outside our trunk we can ensure we know where they are.<br>
 Secondly we can guestimate where our outside triangles will appear and aslong as they are mostly correct, the normals will be very close to accurate removing pesky lighting errors at the edge of trunks.
+
+### Try Add Crater(s)
+
+This Function will add a crater or multiple craters if they fall within the chunk (roughly). <br>
+Check the distance between the centroid of the chunk and a corner, giving a rough size to the chunk, multiplying this by 1.4 to add some error correction. <br>
+Check the distance between the center of the crater and the centroid. <br>
+Check how wide the crater can effect vertices (1 + rimheight) * 2 for fudgibility, times the max crater radius incase we change the size ******in full game change this with craterradius as they will not change size*** <br>
+If the distances check out, we can ensure our crater is atleast near our chunk.
