@@ -16,8 +16,10 @@ struct FChunkMeshDataPlanet
 
 public:
 	TArray<FVector> Vertices;
+	TArray<FVector> WaterVertices;
 	TArray<int> Triangles;
 	TArray<FVector> Normals;
+	TArray<FVector> WaterNormals;
 	TArray<FVector2D> UV0;
 	TArray<FVector2D> UVX;
 	TArray<FVector2D> UVY;
@@ -49,12 +51,17 @@ public:
 	TObjectPtr<UMaterialInterface> Material;
 
 	UPROPERTY(EditAnywhere, Category = "Moon")
+	TObjectPtr<UMaterialInterface> WaterMaterial;
+
+	UPROPERTY(EditAnywhere, Category = "Moon")
 	int SubDivisions = 2;
 
 	float PlanetRadius;
 	float WarpScale = 80;
 	float maxCraterRadius = 1000.0f;
 	float NoiseStrength = 2000.0f;
+
+
 
 	bool debug = false;
 
@@ -65,7 +72,7 @@ public:
 
 	void RefreshChunk();
 
-
+	
 	void SetRendered(bool brender, int subdiv = 0);
 
 protected:
@@ -79,6 +86,7 @@ private:
 	TObjectPtr<UProceduralMeshComponent> Mesh;
 
 	FastNoiseLite* Noise;
+	FastNoiseLite* TemperatureNoise;
 
 	void AddBorder(int Resolution);
 	void SetFinalMaterialValues();
@@ -86,6 +94,8 @@ private:
 
 	void RefreshVertices(int Resolution);
 	TArray<int> GetVerticeRow(int RowNum, int Resolution);
+
+	void SetWater();
 
 	void RefreshTriangles(int Resolution);
 	void AddTriangle(int a, int b, int c);
