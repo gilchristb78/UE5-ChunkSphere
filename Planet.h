@@ -30,6 +30,9 @@ public:
 	TObjectPtr<UMaterialInterface> Material;
 
 	UPROPERTY(EditAnywhere, Category = "Moon")
+	TObjectPtr<UMaterialInterface> MaterialWater;
+
+	UPROPERTY(EditAnywhere, Category = "Moon")
 	FVector PlanetLocation;
 
 	UPROPERTY(EditAnywhere, Category = "Noise")
@@ -49,6 +52,10 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Noise")
 	float warpScale = 80;
+
+#if WITH_EDITOR
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
 
 
 protected:

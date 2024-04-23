@@ -12,6 +12,25 @@ APlanet::APlanet()
 
 }
 
+void APlanet::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+
+	if (PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(APlanet, Frequency) ||
+		PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(APlanet, FractalOctaves) ||
+		PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(APlanet, NoiseSeed) ||
+		PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(APlanet, FractalLacunarity) ||
+		PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(APlanet, FractalGain) ||
+		PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(APlanet, warpScale))
+	{
+		for (APlanetChunk* Chunk : Chunks)
+		{
+			Chunk->SetNoiseVariables(Frequency, FractalOctaves, NoiseSeed, FractalLacunarity, FractalGain, warpScale);
+			Chunk->RefreshChunk();
+		}
+	}
+}
+
 // Called when the game starts or when spawned
 void APlanet::BeginPlay()
 {
@@ -39,7 +58,10 @@ void APlanet::BeginPlay()
 			Chunk->Corners = ChunkTriangle;
 			Chunk->SubDivisions = ChunkSubDivisions;
 			Chunk->Material = Material;
+			Chunk->WaterMaterial = MaterialWater;
 			Chunk->PlanetRadius = PlanetRadius;
+			if (i == 10)
+				Chunk->debug = true;
 			Chunk->SetNoiseVariables(Frequency, FractalOctaves, NoiseSeed, FractalLacunarity, FractalGain, warpScale);
 			Chunk->FinishSpawning(transform);
 			Chunks.Add(Chunk);

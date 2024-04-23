@@ -3,6 +3,7 @@
 
 #include "PlanetChunk.h"
 
+
 // Sets default values
 APlanetChunk::APlanetChunk()
 {
@@ -14,7 +15,15 @@ APlanetChunk::APlanetChunk()
 	RootComponent = Mesh;
 
 	Noise = new FastNoiseLite();
-
+	TemperatureNoise = new FastNoiseLite(); 
+	
+	TemperatureNoise->SetFrequency(0.0004);
+	TemperatureNoise->SetNoiseType(FastNoiseLite::NoiseType_Perlin);
+	TemperatureNoise->SetFractalType(FastNoiseLite::FractalType_FBm);
+	TemperatureNoise->SetDomainWarpType(FastNoiseLite::DomainWarpType_OpenSimplex2);
+	TemperatureNoise->SetFractalGain(0.2);
+	TemperatureNoise->SetFractalLacunarity(7.5);
+	TemperatureNoise->SetFractalOctaves(5);
 }
 
 // Called when the game starts or when spawned
@@ -25,6 +34,7 @@ void APlanetChunk::BeginPlay()
 	if (MeshData.Vertices.IsEmpty()) //Only Set Variables and refresh moon if we havent done it yet.
 	{
 		RefreshChunk();
+		SetWater();
 	}
 }
 
@@ -50,7 +60,7 @@ void APlanetChunk::RefreshVertices(int Resolution)
 {
 	//Reset Array
 	MeshData.Vertices = TArray<FVector>();
-
+	FVector val;
 	//Make the edges of the Triangle (0 -> 1, 0 -> 2, 1 -> 2)
 	for (int Corner1 = 0; Corner1 < 2; Corner1++)
 	{
@@ -59,7 +69,9 @@ void APlanetChunk::RefreshVertices(int Resolution)
 
 			for (int i = 1; i < Resolution; i++)
 			{
-				MeshData.Vertices.Add(FMath::LerpStable(Corners[Corner1], Corners[Corner2], float(i) / Resolution));
+				val = FMath::LerpStable(Corners[Corner1], Corners[Corner2], float(i) / Resolution);
+				MeshData.Vertices.Add(val);
+				MeshData.WaterVertices.Add(val);
 			}
 		}
 	}
@@ -68,13 +80,19 @@ void APlanetChunk::RefreshVertices(int Resolution)
 	MeshData.Vertices.Insert(Corners[0], 0);
 	MeshData.Vertices.Insert(Corners[1], Resolution);
 	MeshData.Vertices.Insert(Corners[2], Resolution * 2);
+	MeshData.WaterVertices.Insert(Corners[0], 0);
+	MeshData.WaterVertices.Insert(Corners[1], Resolution);
+	MeshData.WaterVertices.Insert(Corners[2], Resolution * 2);
+
 
 	// Fill in Inner Triangle
 	for (int i = 2; i < Resolution; i++)
 	{
 		for (int j = 1; j < i; j++)
 		{
-			MeshData.Vertices.Add(FMath::LerpStable(MeshData.Vertices[i], MeshData.Vertices[Resolution + i], float(j) / float(i)));
+			val = FMath::LerpStable(MeshData.Vertices[i], MeshData.Vertices[Resolution + i], float(j) / float(i));
+			MeshData.Vertices.Add(val);
+			MeshData.WaterVertices.Add(val);
 		}
 	}
 }
@@ -116,6 +134,37 @@ TArray<int> APlanetChunk::GetVerticeRow(int RowNum, int Resolution)
 	Row.Add(RowNum + Resolution);
 
 	return Row;
+}
+
+void APlanetChunk::SetWater()
+{
+
+	/*
+	FVector PlanetCenter = Corners[0].GetSafeNormal() * PlanetRadius;
+		FVector location = (vert.GetSafeNormal() * PlanetRadius);
+		FVector WarpedLoc = location;
+		Noise->DomainWarp(WarpedLoc.X, WarpedLoc.Y, WarpedLoc.Z);
+		float noise = Noise->GetNoise(WarpedLoc.X, WarpedLoc.Y, WarpedLoc.Z);
+
+		vert = location - PlanetCenter +(vert.GetSafeNormal() * noise * (PlanetRadius / 12));
+	*/
+	if (debug)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("water"));
+	}
+	for (int i = 0; i < MeshData.WaterVertices.Num(); i++)
+	{
+		FVector Vertice = MeshData.WaterVertices[i];
+		FVector PlanetCenter = Corners[0].GetSafeNormal() * PlanetRadius;
+		FVector Worldlocation = Vertice.GetSafeNormal() * PlanetRadius;
+		FVector WorldWaterLevel = Worldlocation - PlanetCenter;
+		MeshData.WaterVertices[i] = WorldWaterLevel;// = (WorldWaterLevel);
+		MeshData.WaterNormals.Add(Worldlocation.GetSafeNormal());
+	}
+
+	Mesh->SetMaterial(1, WaterMaterial);
+	Mesh->CreateMeshSection(1, MeshData.WaterVertices, MeshData.Triangles, MeshData.WaterNormals, TArray<FVector2D>(), TArray<FColor>(), TArray<FProcMeshTangent>(), false);
+	
 }
 
 /* Reset Triangle Array and Repopulate */
@@ -160,6 +209,7 @@ void APlanetChunk::SetFinalMaterialValues()
 	MeshData.UVX.Empty();
 	MeshData.UVY.Empty();
 	MeshData.UVZ.Empty();
+	MeshData.Colors.Empty();
 	MeshData.Normals.Empty();
 	MeshData.Tangents.Empty();
 	for (FVector& vert : MeshData.Vertices)
@@ -183,27 +233,49 @@ void APlanetChunk::SetFinalMaterialValues()
 		MeshData.UVY.Add(UVY);
 		MeshData.UVZ.Add(UVZ);
 
-		if (FMath::Abs(vert.Z) < 0.05)
+		double color = (1 - FMath::Abs((vert.GetSafeNormal() * PlanetRadius).Z / (FVector::UpVector * PlanetRadius).Z));
+		color += TemperatureNoise->GetNoise((vert.GetSafeNormal() * 10000).X, (vert.GetSafeNormal() * 10000).Y, (vert.GetSafeNormal() * 10000).Z) / 2;
+		color = (color * 2000) + 200;
+
+		/*if (color < 400)
 		{
-			MeshData.Colors.Add(FColor(250, 0, 0));
+			MeshData.Colors.Add(FColor::White);
+		}
+		else if (color < 800)
+		{
+			MeshData.Colors.Add(FColor::Cyan);
 		}
 		else
-		{
-			MeshData.Colors.Add(FColor(0, 0, 0));
-		}
-
-		
+			MeshData.Colors.Add(FColor::MakeFromColorTemperature(color));*/
 
 
 		FVector PlanetCenter = Corners[0].GetSafeNormal() * PlanetRadius;
 		FVector location = (vert.GetSafeNormal() * PlanetRadius);
-		FVector WarpedLoc = location / (PlanetRadius / 100);
+		FVector WarpedLoc = location;
 		Noise->DomainWarp(WarpedLoc.X, WarpedLoc.Y, WarpedLoc.Z);
 		float noise = Noise->GetNoise(WarpedLoc.X, WarpedLoc.Y, WarpedLoc.Z);
 
-		vert = location - PlanetCenter;// +(vert.GetSafeNormal() * noise * NoiseStrength);
+		if (noise < 0)
+		{
+			MeshData.Colors.Add(FColor::White);
+		}
+		else if (noise < 0.05)
+		{
+			MeshData.Colors.Add(FColor(200,200,150));
+		}
+		else if (noise < 0.3)
+		{
+			MeshData.Colors.Add(FColor(50, 200, 25));
+		}
+		else if (noise < 0.5)
+		{
+			MeshData.Colors.Add(FColor(36, 18, 0));
+		}
+		else
+			MeshData.Colors.Add(FColor(12, 36, 0));
 
 
+		vert = location - PlanetCenter +(vert.GetSafeNormal() * noise * (PlanetRadius / 10));
 	}
 
 	double s = FPlatformTime::Seconds();
@@ -365,14 +437,17 @@ void APlanetChunk::AddBorder(int Resolution)
 void APlanetChunk::SetNoiseVariables(float Freq, int Octaves, int Seed, float Lac, float Gain, float warp)
 {
 	Noise->SetSeed(Seed);
-	Noise->SetFrequency(Freq);
+	Noise->SetFrequency(Freq / (PlanetRadius / 1000));
 	Noise->SetNoiseType(FastNoiseLite::NoiseType_Perlin);
 	Noise->SetFractalType(FastNoiseLite::FractalType_FBm);
-	Noise->SetDomainWarpType(FastNoiseLite::DomainWarpType_OpenSimplex2);
+	Noise->SetDomainWarpType(FastNoiseLite::DomainWarpType_BasicGrid);
 	Noise->SetDomainWarpAmp(WarpScale);
 	Noise->SetFractalOctaves(Octaves);
 	Noise->SetFractalLacunarity(Lac);
 	Noise->SetFractalGain(Gain);
+	
+	TemperatureNoise->SetSeed(Seed);
+
 }
 
 /* Set Material and update the mesh */
