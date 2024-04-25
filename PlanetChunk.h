@@ -69,6 +69,7 @@ public:
 
 	void SetMaterial(UMaterialInterface* Mat);
 	void SetNoiseVariables(float Freq, int Octaves, int Seed, float Lac, float Gain, float warp);
+	void SetRidgeNoiseVariables(float Freq, int Octaves, int Seed, float Lac, float Gain, float warp);
 
 	void RefreshChunk();
 
@@ -86,6 +87,7 @@ private:
 	TObjectPtr<UProceduralMeshComponent> Mesh;
 
 	FastNoiseLite* Noise;
+	FastNoiseLite* RidgeNoise;
 	FastNoiseLite* TemperatureNoise;
 
 	void AddBorder(int Resolution);

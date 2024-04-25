@@ -15,6 +15,7 @@ APlanetChunk::APlanetChunk()
 	RootComponent = Mesh;
 
 	Noise = new FastNoiseLite();
+	RidgeNoise = new FastNoiseLite();
 	TemperatureNoise = new FastNoiseLite(); 
 	
 	TemperatureNoise->SetFrequency(0.0004);
@@ -263,11 +264,11 @@ void APlanetChunk::SetFinalMaterialValues()
 		{
 			MeshData.Colors.Add(FColor(200,200,150));
 		}
-		else if (noise < 0.3)
+		else if (noise < 0.15)
 		{
 			MeshData.Colors.Add(FColor(50, 200, 25));
 		}
-		else if (noise < 0.5)
+		else if (noise < 0.3)
 		{
 			MeshData.Colors.Add(FColor(36, 18, 0));
 		}
@@ -278,8 +279,9 @@ void APlanetChunk::SetFinalMaterialValues()
 		else
 			MeshData.Colors.Add(FColor::White);
 
+		float RNoise = (1 * FMath::Pow(FMath::Abs(RidgeNoise->GetNoise(WarpedLoc.X, WarpedLoc.Y, WarpedLoc.Z)),2));
 
-		vert = location - PlanetCenter +(vert.GetSafeNormal() * noise * (PlanetRadius / 25));
+		vert = location - PlanetCenter + (vert.GetSafeNormal() * noise * (PlanetRadius / 25)) +(vert.GetSafeNormal() * RNoise * (PlanetRadius / 10));
 	}
 
 	double s = FPlatformTime::Seconds();
@@ -452,6 +454,19 @@ void APlanetChunk::SetNoiseVariables(float Freq, int Octaves, int Seed, float La
 	
 	TemperatureNoise->SetSeed(Seed);
 
+}
+
+void APlanetChunk::SetRidgeNoiseVariables(float Freq, int Octaves, int Seed, float Lac, float Gain, float warp)
+{
+	RidgeNoise->SetSeed(Seed);
+	RidgeNoise->SetFrequency(Freq / (PlanetRadius / 1000));
+	RidgeNoise->SetNoiseType(FastNoiseLite::NoiseType_Perlin);
+	RidgeNoise->SetFractalType(FastNoiseLite::FractalType_FBm);
+	RidgeNoise->SetDomainWarpType(FastNoiseLite::DomainWarpType_BasicGrid);
+	RidgeNoise->SetDomainWarpAmp(WarpScale);
+	RidgeNoise->SetFractalOctaves(Octaves);
+	RidgeNoise->SetFractalLacunarity(Lac);
+	RidgeNoise->SetFractalGain(Gain);
 }
 
 /* Set Material and update the mesh */
