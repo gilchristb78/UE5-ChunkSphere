@@ -271,11 +271,15 @@ void APlanetChunk::SetFinalMaterialValues()
 		{
 			MeshData.Colors.Add(FColor(36, 18, 0));
 		}
+		else if (noise < 0.7)
+		{
+			MeshData.Colors.Add(FColor(99, 99, 99));
+		}
 		else
-			MeshData.Colors.Add(FColor(12, 36, 0));
+			MeshData.Colors.Add(FColor::White);
 
 
-		vert = location - PlanetCenter +(vert.GetSafeNormal() * noise * (PlanetRadius / 10));
+		vert = location - PlanetCenter +(vert.GetSafeNormal() * noise * (PlanetRadius / 25));
 	}
 
 	double s = FPlatformTime::Seconds();

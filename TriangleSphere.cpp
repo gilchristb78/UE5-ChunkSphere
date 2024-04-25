@@ -210,7 +210,7 @@ void ATriangleSphere::SetFinalMaterialValues()
 		float noiseY = Noise->GetNoise(location.X + 52, location.Y + 13, location.Z + 7);
 		float noiseZ = Noise->GetNoise(location.X + 15, location.Y + 8, location.Z + 4);*/
 		FVector WarpedLoc = location / (PlanetRadius / 100);
-		Noise->DomainWarp(WarpedLoc.X, WarpedLoc.Y, WarpedLoc.Z);
+		//Noise->DomainWarp(WarpedLoc.X, WarpedLoc.Y, WarpedLoc.Z);
 		float noise = Noise->GetNoise(WarpedLoc.X /*+ (noiseZ * WarpScale)*/, WarpedLoc.Y/*+ (noiseY * WarpScale)*/, WarpedLoc.Z/*+ (noiseZ * WarpScale)*/);
 
 		float craterheight = 0;
@@ -220,7 +220,7 @@ void ATriangleSphere::SetFinalMaterialValues()
 			craterheight += offset;
 		}
 
-		vert = location - PlanetCenter + (vert.GetSafeNormal() * noise * NoiseStrength) + (vert.GetSafeNormal() * craterheight);
+		vert = location - PlanetCenter + (vert.GetSafeNormal() * noise * (PlanetRadius / 10)) + (vert.GetSafeNormal() * craterheight);
 		
 		
 	}
