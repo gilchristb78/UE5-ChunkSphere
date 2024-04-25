@@ -29,6 +29,20 @@ void APlanet::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent
 			Chunk->RefreshChunk();
 		}
 	}
+
+	if (PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(APlanet, RidgeFrequency) ||
+		PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(APlanet, RidgeFractalOctaves) ||
+		PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(APlanet, RidgeNoiseSeed) ||
+		PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(APlanet, RidgeFractalLacunarity) ||
+		PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(APlanet, RidgeFractalGain) ||
+		PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(APlanet, RidgewarpScale))
+	{
+		for (APlanetChunk* Chunk : Chunks)
+		{
+			Chunk->SetRidgeNoiseVariables(RidgeFrequency, RidgeFractalOctaves, RidgeNoiseSeed, RidgeFractalLacunarity, RidgeFractalGain, RidgewarpScale);
+			Chunk->RefreshChunk();
+		}
+	}
 }
 
 // Called when the game starts or when spawned
@@ -63,6 +77,7 @@ void APlanet::BeginPlay()
 			if (i == 10)
 				Chunk->debug = true;
 			Chunk->SetNoiseVariables(Frequency, FractalOctaves, NoiseSeed, FractalLacunarity, FractalGain, warpScale);
+			Chunk->SetRidgeNoiseVariables(RidgeFrequency, RidgeFractalOctaves, RidgeNoiseSeed, RidgeFractalLacunarity, RidgeFractalGain, RidgewarpScale);
 			Chunk->FinishSpawning(transform);
 			Chunks.Add(Chunk);
 			ChunkRows[GetRow(i)][GetCol(i)] = Chunk;//.Insert(Chunk, GetCol(i));

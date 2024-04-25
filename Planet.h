@@ -53,6 +53,24 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Noise")
 	float warpScale = 80;
 
+	UPROPERTY(EditAnywhere, Category = "RidgeNoise")
+	float RidgeFrequency = 0.01f;
+
+	UPROPERTY(EditAnywhere, Category = "RidgeNoise")
+	int RidgeFractalOctaves = 3;
+
+	UPROPERTY(EditAnywhere, Category = "RidgeNoise")
+	int RidgeNoiseSeed = 0;
+
+	UPROPERTY(EditAnywhere, Category = "RidgeNoise")
+	float RidgeFractalLacunarity = 2.0f;
+
+	UPROPERTY(EditAnywhere, Category = "RidgeNoise")
+	float RidgeFractalGain = 0.5f;
+
+	UPROPERTY(EditAnywhere, Category = "RidgeNoise")
+	float RidgewarpScale = 80;
+
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
