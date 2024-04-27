@@ -65,6 +65,7 @@ void ASphereChunk::BeginPlay()
 				Chunk->debug = true;
 			}
 			Chunk->TryAddCraters(Craters);
+			Chunk->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
 			Chunk->FinishSpawning(transform);
 			Chunks.Add(Chunk);
 			ChunkRows[GetRow(i)][GetCol(i)] = Chunk;//.Insert(Chunk, GetCol(i));
@@ -82,6 +83,10 @@ void ASphereChunk::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	FRotator RotationDelta(10 * DeltaTime, 0, 0);
+	FQuat RotationQuat = FQuat(RotationDelta);
+	AddActorLocalRotation(RotationQuat);
+
 	TArray<AActor*> DefaultPawns;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), APawn::StaticClass(), DefaultPawns);
 
@@ -94,12 +99,12 @@ void ASphereChunk::Tick(float DeltaTime)
 			FVector Normal = (EndLocation - StartLocation).GetSafeNormal();
 
 
-			if (!isPointInChunk(ChunkIn, Normal))
+			/*if (!isPointInChunk(ChunkIn, Normal))
 			{
 				ChunkIn->SetMaterial(Material);
 				ChunkIn = GetChunkAt(Normal);
 				ChunkIn->SetMaterial(Material3);
-			}
+			}*/
 			
 
 			FVector DebugLoc = StartLocation + Normal * PlanetRadius;

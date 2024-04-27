@@ -25,6 +25,7 @@ APlanetChunk::APlanetChunk()
 	TemperatureNoise->SetFractalGain(0.2);
 	TemperatureNoise->SetFractalLacunarity(7.5);
 	TemperatureNoise->SetFractalOctaves(5);
+
 }
 
 // Called when the game starts or when spawned

@@ -78,6 +78,7 @@ void APlanet::BeginPlay()
 				Chunk->debug = true;
 			Chunk->SetNoiseVariables(Frequency, FractalOctaves, NoiseSeed, FractalLacunarity, FractalGain, warpScale);
 			Chunk->SetRidgeNoiseVariables(RidgeFrequency, RidgeFractalOctaves, RidgeNoiseSeed, RidgeFractalLacunarity, RidgeFractalGain, RidgewarpScale);
+			Chunk->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
 			Chunk->FinishSpawning(transform);
 			Chunks.Add(Chunk);
 			ChunkRows[GetRow(i)][GetCol(i)] = Chunk;//.Insert(Chunk, GetCol(i));
