@@ -1,6 +1,6 @@
 # UE5-ChunkSphere
 In this project I will expand on icosphere by dividing the sphere into "chunks" that can be individually subdivided for added performance.
-
+![Planet And Moon With Distance from Water Colored](https://github.com/gilchristb78/UE5-ChunkSphere/blob/main/MoonCapture/PlanetAndMoonWaterDistColors.PNG)
 
 made a decision to just search all the chunks for close subdivisions (roughly caps divisions at like 4 but only need < 5 then subdivide chunks)
 
