@@ -52,7 +52,7 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Moon")
 	int SubDivisions = 2;
-
+	FColor MoonColor = FColor::Black;
 	float PlanetRadius;
 	float WarpScale = 80;
 	float maxCraterRadius = 1000.0f;

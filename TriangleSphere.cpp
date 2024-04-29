@@ -61,7 +61,7 @@ void ATriangleSphere::RefreshMoon()
 	}
 
 	Mesh->SetMaterial(0, Material);
-	Mesh->CreateMeshSection(0, MeshData.Vertices, MeshData.Triangles, MeshData.Normals, MeshData.UV0, MeshData.UVX, MeshData.UVY, MeshData.UVZ, TArray<FColor>(), MeshData.Tangents, true);
+	Mesh->CreateMeshSection(0, MeshData.Vertices, MeshData.Triangles, MeshData.Normals, MeshData.UV0, MeshData.UVX, MeshData.UVY, MeshData.UVZ, MeshData.Colors, MeshData.Tangents, true);
 
 }
 
@@ -180,6 +180,7 @@ void ATriangleSphere::SetFinalMaterialValues()
 	MeshData.UVX.Empty();
 	MeshData.UVY.Empty();
 	MeshData.UVZ.Empty();
+	MeshData.Colors.Empty();
 	MeshData.Normals.Empty();
 	MeshData.Tangents.Empty();
 	for (FVector& vert : MeshData.Vertices)
@@ -212,7 +213,16 @@ void ATriangleSphere::SetFinalMaterialValues()
 		FVector WarpedLoc = location / (PlanetRadius / 100);
 		//Noise->DomainWarp(WarpedLoc.X, WarpedLoc.Y, WarpedLoc.Z);
 		float noise = Noise->GetNoise(WarpedLoc.X /*+ (noiseZ * WarpScale)*/, WarpedLoc.Y/*+ (noiseY * WarpScale)*/, WarpedLoc.Z/*+ (noiseZ * WarpScale)*/);
-
+		WarpedLoc *= 0.8;
+		Noise->DomainWarp(WarpedLoc.X, WarpedLoc.Y, WarpedLoc.Z);
+		if (Noise->GetNoise(WarpedLoc.X , WarpedLoc.Y , WarpedLoc.Z ) > 0.1)
+		{
+			MeshData.Colors.Add(MoonColor);
+		}
+		else
+		{
+			MeshData.Colors.Add(FColor::White);
+		}
 		float craterheight = 0;
 		for (UCrater* Crater : Craters)
 		{
@@ -238,6 +248,7 @@ void ATriangleSphere::SetFinalMaterialValues()
 	
 	MeshData.Vertices.SetNum(MeshData.VerticeNum);
 	MeshData.Triangles.SetNum(MeshData.TriangleNum);
+	MeshData.Colors.SetNum(MeshData.VerticeNum);
 	MeshData.UV0.SetNum(MeshData.VerticeNum);
 	MeshData.UVX.SetNum(MeshData.VerticeNum);
 	MeshData.UVY.SetNum(MeshData.VerticeNum);
@@ -410,8 +421,8 @@ void ATriangleSphere::SetNoiseVariables(float Freq, int Octaves, int Seed, float
 	Noise->SetFrequency(Freq);
 	Noise->SetNoiseType(FastNoiseLite::NoiseType_Perlin);
 	Noise->SetFractalType(FastNoiseLite::FractalType_FBm);
-	Noise->SetDomainWarpType(FastNoiseLite::DomainWarpType_OpenSimplex2);
-	Noise->SetDomainWarpAmp(WarpScale);
+	Noise->SetDomainWarpType(FastNoiseLite::DomainWarpType_BasicGrid);
+	Noise->SetDomainWarpAmp(warp);
 	Noise->SetFractalOctaves(Octaves);
 	Noise->SetFractalLacunarity(Lac);
 	Noise->SetFractalGain(Gain);
@@ -447,7 +458,7 @@ void ATriangleSphere::SetRendered(bool brender, int subdiv)
 		}
 		else
 		{
-			Mesh->CreateMeshSection(0, MeshData.Vertices, MeshData.Triangles, MeshData.Normals, MeshData.UV0, MeshData.UVX, MeshData.UVY, MeshData.UVZ, TArray<FColor>(), MeshData.Tangents, true);
+			Mesh->CreateMeshSection(0, MeshData.Vertices, MeshData.Triangles, MeshData.Normals, MeshData.UV0, MeshData.UVX, MeshData.UVY, MeshData.UVZ, MeshData.Colors, MeshData.Tangents, true);
 		}
 	}
 	else

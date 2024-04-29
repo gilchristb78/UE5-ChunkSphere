@@ -60,6 +60,7 @@ void ASphereChunk::BeginPlay()
 			Chunk->SetNoiseVariables(Frequency, FractalOctaves, NoiseSeed, FractalLacunarity, FractalGain, warpScale);
 			Chunk->NoiseStrength = NoiseStrength;
 			Chunk->maxCraterRadius = (PlanetRadius / 4);
+			Chunk->MoonColor = MoonColor;
 			if (i % 1000 == 0)
 			{
 				Chunk->debug = true;
@@ -83,7 +84,7 @@ void ASphereChunk::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	FRotator RotationDelta(10 * DeltaTime, 0, 0);
+	FRotator RotationDelta(RotationalSpeed * DeltaTime, 0, 0);
 	FQuat RotationQuat = FQuat(RotationDelta);
 	AddActorLocalRotation(RotationQuat);
 
