@@ -19,6 +19,12 @@ public:
 	ASphereChunk();
 
 	UPROPERTY(EditAnywhere, Category = "Moon")
+	int RotationalSpeed = 0;
+
+	UPROPERTY(EditAnywhere, Category = "Moon")
+	FColor MoonColor = FColor::Black;
+
+	UPROPERTY(EditAnywhere, Category = "Moon")
 	int PlanetSubDivisions = 2;
 
 	UPROPERTY(EditAnywhere, Category = "Moon")
