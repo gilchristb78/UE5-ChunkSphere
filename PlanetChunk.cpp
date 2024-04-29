@@ -448,7 +448,7 @@ void APlanetChunk::SetNoiseVariables(float Freq, int Octaves, int Seed, float La
 	Noise->SetNoiseType(FastNoiseLite::NoiseType_Perlin);
 	Noise->SetFractalType(FastNoiseLite::FractalType_FBm);
 	Noise->SetDomainWarpType(FastNoiseLite::DomainWarpType_BasicGrid);
-	Noise->SetDomainWarpAmp(WarpScale);
+	Noise->SetDomainWarpAmp(warp);
 	Noise->SetFractalOctaves(Octaves);
 	Noise->SetFractalLacunarity(Lac);
 	Noise->SetFractalGain(Gain);
