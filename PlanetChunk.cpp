@@ -464,7 +464,7 @@ void APlanetChunk::SetRidgeNoiseVariables(float Freq, int Octaves, int Seed, flo
 	RidgeNoise->SetNoiseType(FastNoiseLite::NoiseType_Perlin);
 	RidgeNoise->SetFractalType(FastNoiseLite::FractalType_FBm);
 	RidgeNoise->SetDomainWarpType(FastNoiseLite::DomainWarpType_BasicGrid);
-	RidgeNoise->SetDomainWarpAmp(WarpScale);
+	RidgeNoise->SetDomainWarpAmp(warp);
 	RidgeNoise->SetFractalOctaves(Octaves);
 	RidgeNoise->SetFractalLacunarity(Lac);
 	RidgeNoise->SetFractalGain(Gain);

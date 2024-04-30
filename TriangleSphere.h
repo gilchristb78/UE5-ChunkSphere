@@ -54,7 +54,8 @@ public:
 	int SubDivisions = 2;
 	FColor MoonColor = FColor::Black;
 	float PlanetRadius;
-	float WarpScale = 80;
+	float WarpScale = 0;
+	float ColorWarp = 0;
 	float maxCraterRadius = 1000.0f;
 	float NoiseStrength = 2000.0f;
 	
@@ -74,7 +75,7 @@ public:
 	void TryAddCraters(TArray<UCrater*> craters);
 
 	void SetMaterial(UMaterialInterface* Mat);
-	void SetNoiseVariables(float Freq, int Octaves, int Seed, float Lac, float Gain, float warp);
+	void SetNoiseVariables(float Freq, int Octaves, int Seed, float Lac, float Gain, float warp, float colorWarp);
 
 	void RefreshMoon();
 
