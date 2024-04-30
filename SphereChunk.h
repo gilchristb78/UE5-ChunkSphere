@@ -70,7 +70,10 @@ public:
 	float NoiseStrength = 2000.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Noise")
-	float warpScale = 80;
+	float warpScale = 3;
+
+	UPROPERTY(EditAnywhere, Category = "Noise")
+	float colorWarpScale = 2;
 
 	UPROPERTY(EditAnywhere, Category = "Crater")
 	int CraterNum = 1;

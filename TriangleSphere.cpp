@@ -212,9 +212,12 @@ void ATriangleSphere::SetFinalMaterialValues()
 		float noiseZ = Noise->GetNoise(location.X + 15, location.Y + 8, location.Z + 4);*/
 		FVector WarpedLoc = location / (PlanetRadius / 100);
 		//Noise->DomainWarp(WarpedLoc.X, WarpedLoc.Y, WarpedLoc.Z);
-		float noise = Noise->GetNoise(WarpedLoc.X /*+ (noiseZ * WarpScale)*/, WarpedLoc.Y/*+ (noiseY * WarpScale)*/, WarpedLoc.Z/*+ (noiseZ * WarpScale)*/);
-		WarpedLoc *= 0.8;
 		Noise->DomainWarp(WarpedLoc.X, WarpedLoc.Y, WarpedLoc.Z);
+		float noise = Noise->GetNoise(WarpedLoc.X /*+ (noiseZ * WarpScale)*/, WarpedLoc.Y/*+ (noiseY * WarpScale)*/, WarpedLoc.Z/*+ (noiseZ * WarpScale)*/);
+		Noise->SetDomainWarpAmp(ColorWarp);
+		WarpedLoc = location / (PlanetRadius / 100) * 0.8;
+		Noise->DomainWarp(WarpedLoc.X, WarpedLoc.Y, WarpedLoc.Z);
+		Noise->SetDomainWarpAmp(WarpScale);
 		if (Noise->GetNoise(WarpedLoc.X , WarpedLoc.Y , WarpedLoc.Z ) > 0.1)
 		{
 			MeshData.Colors.Add(MoonColor);
@@ -230,7 +233,7 @@ void ATriangleSphere::SetFinalMaterialValues()
 			craterheight += offset;
 		}
 
-		vert = location - PlanetCenter + (vert.GetSafeNormal() * noise * (PlanetRadius / 10)) + (vert.GetSafeNormal() * craterheight);
+		vert = location - PlanetCenter + (vert.GetSafeNormal() * noise * (PlanetRadius / 8)) + (vert.GetSafeNormal() * craterheight);
 		
 		
 	}
@@ -415,14 +418,16 @@ void ATriangleSphere::TryAddCraters(TArray<UCrater*> craters)
 }
 
 /* Set Noise Variables */
-void ATriangleSphere::SetNoiseVariables(float Freq, int Octaves, int Seed, float Lac, float Gain, float warp)
+void ATriangleSphere::SetNoiseVariables(float Freq, int Octaves, int Seed, float Lac, float Gain, float warp, float colorWarp)
 {
 	Noise->SetSeed(Seed);
 	Noise->SetFrequency(Freq);
 	Noise->SetNoiseType(FastNoiseLite::NoiseType_Perlin);
 	Noise->SetFractalType(FastNoiseLite::FractalType_FBm);
-	Noise->SetDomainWarpType(FastNoiseLite::DomainWarpType_BasicGrid);
+	Noise->SetDomainWarpType(FastNoiseLite::DomainWarpType_OpenSimplex2Reduced);
 	Noise->SetDomainWarpAmp(warp);
+	WarpScale = warp;
+	ColorWarp = colorWarp;
 	Noise->SetFractalOctaves(Octaves);
 	Noise->SetFractalLacunarity(Lac);
 	Noise->SetFractalGain(Gain);

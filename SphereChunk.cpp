@@ -57,7 +57,7 @@ void ASphereChunk::BeginPlay()
 			Chunk->SubDivisions = ChunkSubDivisions;
 			Chunk->Material = Material;
 			Chunk->PlanetRadius = PlanetRadius;
-			Chunk->SetNoiseVariables(Frequency, FractalOctaves, NoiseSeed, FractalLacunarity, FractalGain, warpScale);
+			Chunk->SetNoiseVariables(Frequency, FractalOctaves, NoiseSeed, FractalLacunarity, FractalGain, warpScale, colorWarpScale);
 			Chunk->NoiseStrength = NoiseStrength;
 			Chunk->maxCraterRadius = (PlanetRadius / 4);
 			Chunk->MoonColor = MoonColor;
@@ -141,11 +141,12 @@ void ASphereChunk::PostEditChangeProperty(FPropertyChangedEvent& PropertyChanged
 		PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(ASphereChunk, FractalLacunarity) ||
 		PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(ASphereChunk, FractalGain) ||
 		PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(ASphereChunk, NoiseStrength) ||
-		PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(ASphereChunk, warpScale))
+		PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(ASphereChunk, warpScale) ||
+		PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(ASphereChunk, colorWarpScale))
 	{
 		for (ATriangleSphere* Chunk : Chunks)
 		{
-			Chunk->SetNoiseVariables(Frequency, FractalOctaves, NoiseSeed, FractalLacunarity, FractalGain, warpScale);
+			Chunk->SetNoiseVariables(Frequency, FractalOctaves, NoiseSeed, FractalLacunarity, FractalGain, warpScale, colorWarpScale);
 			Chunk->RefreshMoon();
 		}
 	}
